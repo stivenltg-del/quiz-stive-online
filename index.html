@@ -305,6 +305,15 @@ function resultFromScore(sc,max,ranges){
   let i=b.findIndex(x=>s>=x.min&&s<=x.max);if(i<0)i=s>=b[4].min?4:0;
   return {range:rs[i],bounds:b[i],index:i};
 }
+function shuffleCopy(arr){
+  const a=Array.isArray(arr)?arr.slice():[];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
 function renderQuestion(){
   const q=quiz.questions[current];
   randomizedOptions=shuffleCopy(Array.isArray(q.options)?q.options:[]);
