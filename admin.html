@@ -38,6 +38,12 @@ button.danger{background:#c83f4d}
 .image-row{display:grid;grid-template-columns:1fr 100px;gap:10px;align-items:end}
 .small{font-size:12px;color:var(--muted)}
 .sound-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.score-range-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.score-range-card{border:1px solid var(--line);border-radius:16px;padding:13px;background:#fafbfc}
+.score-range-card h3{font-size:14px;margin:0 0 8px}
+.range-preview{margin-top:10px;padding:10px;border-radius:12px;background:#fff;border:1px dashed var(--line);font-weight:800}
+@media(max-width:700px){.score-range-grid{grid-template-columns:1fr 1fr}}
+
 .sound-card{border:1px solid var(--line);border-radius:16px;padding:13px;background:#fafbfc}
 audio{width:100%;margin-top:8px}
 .style-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
@@ -88,6 +94,7 @@ th,td{padding:10px;border-bottom:1px solid #eee;text-align:left;white-space:nowr
     <div class="tools">
       <button class="tool active" data-view="editor">✏️ Quiz</button>
       <button class="tool" data-view="appearance">🎨 Tampilan</button>
+      <button class="tool" data-view="ranges">🏆 Rentang Poin</button>
       <button class="tool" data-view="sounds">🔊 Suara</button>
       <button class="tool" data-view="results">📊 Hasil</button>
     </div>
@@ -191,6 +198,25 @@ th,td{padding:10px;border-bottom:1px solid #eee;text-align:left;white-space:nowr
       </div>
     </section>
 
+
+    <section id="view-ranges" class="hidden">
+      <button class="secondary back" data-view="editor">← Kembali ke Edit Quiz</button>
+      <div class="card">
+        <h2>🏆 Rentang Hasil Berdasarkan Poin</h2>
+        <p class="small">
+          Maksimal poin dihitung otomatis dari semua pilihan jawaban. Kamu cukup mengatur nama hasil,
+          pesan, dan reaction untuk tiap tingkat. Batas angka akan mengikuti maksimal poin terbaru.
+        </p>
+        <div class="status" id="maxScoreStatus"></div>
+        <div class="score-range-grid" id="scoreRangeGrid"></div>
+        <div class="actions">
+          <button id="saveRanges">💾 Simpan Rentang Hasil</button>
+          <button class="secondary" id="resetRanges">↺ Reset Rentang</button>
+        </div>
+        <div id="rangeStatus" class="status"></div>
+      </div>
+    </section>
+
     <section id="view-sounds" class="hidden">
       <button class="secondary back" data-view="editor">← Kembali ke Edit Quiz</button>
       <div class="card">
@@ -286,9 +312,49 @@ function defaultQuestion(i){
     }))
   };
 }
+
+function defaultResultRanges(){
+  return [
+    {label:"Level 1",message:"Masih kurang kenal 😭",reactionImage:""},
+    {label:"Level 2",message:"Lumayan kenal 👀",reactionImage:""},
+    {label:"Level 3",message:"Cukup dekat 😎",reactionImage:""},
+    {label:"Level 4",message:"Kenal banget 🔥",reactionImage:""},
+    {label:"Level 5",message:"Bestie banget 💀",reactionImage:""}
+  ];
+}
+function getMaxScore(data){
+  return (data?.questions||[]).reduce((sum,q)=>
+    sum + Math.max(0,...(q.options||[]).map(o=>safeNum(o.points,0))),0);
+}
+function calcRangeBounds(maxScore){
+  const max=Math.max(0,Math.round(maxScore));
+  return [1,2,3,4,5].map(level=>{
+    const min=Math.floor(((level-1)*max)/5)+1;
+    const end=Math.floor((level*max)/5);
+    return {min: max===0?0:min, max:end};
+  });
+}
+function renderRangeEditor(data){
+  const ranges=(data.resultRanges&&data.resultRanges.length===5)?data.resultRanges:defaultResultRanges();
+  const bounds=calcRangeBounds(getMaxScore(data));
+  $("maxScoreStatus").textContent=`Maksimal poin saat ini: ${getMaxScore(data)} poin. Rentang angka dihitung otomatis.`;
+  const holder=$("scoreRangeGrid"); holder.innerHTML="";
+  ranges.forEach((r,idx)=>{
+    const b=bounds[idx], box=document.createElement("div");
+    box.className="score-range-card";
+    box.innerHTML=`<h3>Tingkat ${idx+1}</h3>
+      <div class="range-preview">${b.min}–${b.max} poin</div>
+      <label>Nama hasil</label><input class="range-label" value="${esc(r.label||"")}">
+      <label>Pesan hasil</label><textarea class="range-message">${esc(r.message||"")}</textarea>
+      <label>Reaction image URL</label><input class="range-reaction" value="${esc(r.reactionImage||"")}" placeholder="Opsional">`;
+    holder.appendChild(box);
+  });
+}
+
 function defaultData(){
   return {eyebrow:"QUIZ PERSONAL GW",title:"SEBERAPA KENAL KAMU SAMA STIVEN?",subtitle:"[EDIT SUBJUDUL QUIZ]",
-    display:JSON.parse(JSON.stringify(DEFAULT_DISPLAY)),questions:Array.from({length:10},(_,i)=>defaultQuestion(i))};
+    display:JSON.parse(JSON.stringify(DEFAULT_DISPLAY)),questions:Array.from({length:10},(_,i)=>defaultQuestion(i)),
+    resultRanges:defaultResultRanges()};
 }
 function mergeDisplay(d){
   const out=JSON.parse(JSON.stringify(DEFAULT_DISPLAY));
@@ -298,7 +364,7 @@ function mergeDisplay(d){
 
 function switchView(view){
   document.querySelectorAll(".tool[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
-  ["editor","appearance","sounds","results"].forEach(v=>$("view-"+v).classList.toggle("hidden",v!==view));
+  ["editor","appearance","ranges","sounds","results"].forEach(v=>$("view-"+v).classList.toggle("hidden",v!==view));
   if(view==="results")loadResults();
 }
 document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>switchView(b.dataset.view)));
@@ -312,6 +378,7 @@ function renderEditor(data){
   (data.questions||[]).forEach((q,qi)=>addQuestionCard(q,qi,false));
   if(!(data.questions||[]).length)addQuestionCard(defaultQuestion(0),0,false);
   renderAppearanceControls(data.display||DEFAULT_DISPLAY);
+  renderRangeEditor(data);
   renderLivePreview();
 }
 
@@ -350,6 +417,9 @@ function addOptionCard(parent,o,oi){
   rfile.onchange=()=>{if(rfile.files[0])openCrop(rfile.files[0],rimg,rprev);rfile.value=""};
   rimg.oninput=()=>{rprev.src=rimg.value;rprev.style.opacity=1};
   parent.appendChild(op);
+   op.querySelector(".o-points").addEventListener("input",()=>{
+     if(currentData){syncEditorIntoData();renderRangeEditor(currentData);}
+   });
 }
 function renumberQuestions(){document.querySelectorAll(".qcard").forEach((q,i)=>q.querySelector("h2").textContent="Soal "+(i+1))}
 $("addQuestion").onclick=()=>addQuestionCard(defaultQuestion(document.querySelectorAll(".qcard").length),document.querySelectorAll(".qcard").length,true);
@@ -456,6 +526,44 @@ async function loadQuiz(){
   }catch(e){msg("❌ Gagal memuat quiz: "+e.message)}
 }
 $("reloadQuiz").onclick=loadQuiz;
+
+
+function syncEditorIntoData(){
+  if(!currentData)return;
+  currentData.eyebrow=$("eyebrow").value;
+  currentData.title=$("title").value;
+  currentData.subtitle=$("subtitle").value;
+  currentData.questions=[...document.querySelectorAll(".qcard")].map((box,qi)=>({
+    order:qi+1,
+    question:box.querySelector(".q-text").value,
+    options:[...box.querySelectorAll(".option")].map(op=>({
+      text:op.querySelector(".o-text").value,
+      image:op.querySelector(".o-image").value,
+      points:safeNum(op.querySelector(".o-points").value,0),
+      feedback:op.querySelector(".o-feedback").value,
+      explanation:op.querySelector(".o-explanation").value,
+      reactionImage:op.querySelector(".o-reaction").value
+    }))
+  }));
+}
+$("saveRanges").onclick=async()=>{
+  try{
+    syncEditorIntoData();
+    const ranges=[...document.querySelectorAll(".score-range-card")].map(box=>({
+      label:box.querySelector(".range-label").value,
+      message:box.querySelector(".range-message").value,
+      reactionImage:box.querySelector(".range-reaction").value
+    }));
+    currentData.resultRanges=ranges;
+    await db.collection("quizSettings").doc("main").set({resultRanges:ranges},{merge:true});
+    renderRangeEditor(currentData);
+    $("rangeStatus").textContent="Rentang hasil berhasil disimpan.";
+  }catch(e){$("rangeStatus").textContent="Gagal menyimpan: "+e.message}
+};
+$("resetRanges").onclick=()=>{
+  currentData.resultRanges=defaultResultRanges();
+  renderRangeEditor(currentData);
+};
 
 $("saveQuiz").onclick=async()=>{
   msg("Menyimpan quiz...");
