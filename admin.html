@@ -89,7 +89,7 @@ small{color:#69707e}
 </section>
 </main>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js">const SOUND_KEYS=["button","0","1","2","3","4","5"];const pendingSounds={};function readAudio(f){return new Promise((r,j)=>{const x=new FileReader();x.onload=()=>r(x.result);x.onerror=j;x.readAsDataURL(f)})}function ss(t){const e=document.getElementById("soundStatus");if(e)e.textContent=t}function sp(k,v){const a=document.getElementById("prev_"+k);if(a){a.src=v||"";a.style.display=v?"block":"none"}}async function loadSounds(){if(!db)return;try{const s=await db.collection("quizSettings").doc("sounds").get(),d=s.exists?s.data():{};SOUND_KEYS.forEach(k=>{if(d[k])sp(k,d[k])});ss(s.exists?"Pengaturan suara berhasil dimuat.":"Belum ada pengaturan suara.")}catch(e){ss("Gagal memuat suara: "+e.message)}}SOUND_KEYS.forEach(k=>{const i=document.getElementById("snd_"+k);if(i)i.onchange=async()=>{const f=i.files&&i.files[0];if(!f)return;if(f.size>500000){ss("File terlalu besar. Maksimal sekitar 250 KB.");i.value="";return}pendingSounds[k]=await readAudio(f);sp(k,pendingSounds[k]);ss("Suara siap disimpan.")}});document.getElementById("saveSounds")?.addEventListener("click",async()=>{if(!db)return;ss("Menyimpan suara...");try{const ref=db.collection("quizSettings").doc("sounds"),s=await ref.get(),d=s.exists?s.data():{};SOUND_KEYS.forEach(k=>{if(k in pendingSounds)d[k]=pendingSounds[k]});d.updatedAt=firebase.firestore.FieldValue.serverTimestamp();await ref.set(d);ss("✅ Pengaturan suara tersimpan.")}catch(e){ss("❌ Gagal menyimpan: "+e.message)}});document.getElementById("clearSounds")?.addEventListener("click",async()=>{if(!db||!confirm("Hapus semua suara custom?"))return;await db.collection("quizSettings").doc("sounds").set({button:"","0":"","1":"","2":"","3":"","4":"","5":""});SOUND_KEYS.forEach(k=>sp(k,""));ss("Suara custom dihapus.")});loadSounds();</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="./firebase-config.js"></script>
@@ -265,8 +265,23 @@ $("export").onclick=()=>{
 
 $("loginBtn").onclick=async()=>{
   if(!auth){setMsg("Isi firebase-config.js dulu.");return}
-  try{await auth.signInWithEmailAndPassword($("email").value,$("password").value);setMsg("");}
-  catch(e){setMsg("Login gagal: "+e.message);}
+  try{
+    const email=$("email").value.trim();
+    const password=$("password").value;
+    if(!email || !password){setMsg("Masukkan email dan password admin.");return}
+    await auth.signInWithEmailAndPassword(email,password);
+    setMsg("");
+  }catch(e){
+    const code=e && e.code ? e.code : "";
+    const map={
+      "auth/invalid-credential":"Email atau password admin salah.",
+      "auth/user-not-found":"Akun admin tidak ditemukan.",
+      "auth/wrong-password":"Password admin salah.",
+      "auth/invalid-email":"Format email tidak valid.",
+      "auth/too-many-requests":"Terlalu banyak percobaan. Coba lagi nanti."
+    };
+    setMsg("Login gagal: "+(map[code]||e.message));
+  }
 };
 $("logout").onclick=()=>auth.signOut();
 $("saveQuiz").onclick=saveQuiz;
@@ -278,12 +293,14 @@ try{
   if(window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.apiKey&&window.FIREBASE_CONFIG.apiKey!=="ISI_API_KEY"){
     firebase.initializeApp(window.FIREBASE_CONFIG);
     auth=firebase.auth();db=firebase.firestore();
+    const SOUND_KEYS=["button","0","1","2","3","4","5"];const pendingSounds={};function readAudio(f){return new Promise((r,j)=>{const x=new FileReader();x.onload=()=>r(x.result);x.onerror=j;x.readAsDataURL(f)})}function ss(t){const e=document.getElementById("soundStatus");if(e)e.textContent=t}function sp(k,v){const a=document.getElementById("prev_"+k);if(a){a.src=v||"";a.style.display=v?"block":"none"}}async function loadSounds(){if(!db)return;try{const s=await db.collection("quizSettings").doc("sounds").get(),d=s.exists?s.data():{};SOUND_KEYS.forEach(k=>{if(d[k])sp(k,d[k])});ss(s.exists?"Pengaturan suara berhasil dimuat.":"Belum ada pengaturan suara.")}catch(e){ss("Gagal memuat suara: "+e.message)}}SOUND_KEYS.forEach(k=>{const i=document.getElementById("snd_"+k);if(i)i.onchange=async()=>{const f=i.files&&i.files[0];if(!f)return;if(f.size>500000){ss("File terlalu besar. Maksimal sekitar 500 KB.");i.value="";return}pendingSounds[k]=await readAudio(f);sp(k,pendingSounds[k]);ss("Suara siap disimpan.")}});document.getElementById("saveSounds")?.addEventListener("click",async()=>{if(!db)return;ss("Menyimpan suara...");try{const ref=db.collection("quizSettings").doc("sounds"),s=await ref.get(),d=s.exists?s.data():{};SOUND_KEYS.forEach(k=>{if(k in pendingSounds)d[k]=pendingSounds[k]});d.updatedAt=firebase.firestore.FieldValue.serverTimestamp();await ref.set(d);ss("✅ Pengaturan suara tersimpan.")}catch(e){ss("❌ Gagal menyimpan: "+e.message)}});document.getElementById("clearSounds")?.addEventListener("click",async()=>{if(!db||!confirm("Hapus semua suara custom?"))return;await db.collection("quizSettings").doc("sounds").set({button:"","0":"","1":"","2":"","3":"","4":"","5":""});SOUND_KEYS.forEach(k=>sp(k,""));ss("Suara custom dihapus.")});
+    loadSounds();
     auth.onAuthStateChanged(async u=>{
       if(u){$("login").classList.add("hidden");$("panel").classList.remove("hidden");$("who").textContent="Login: "+u.email;await loadQuiz();}
       else{$("login").classList.remove("hidden");$("panel").classList.add("hidden");}
     });
   }
-}catch(e){setMsg("Konfigurasi Firebase belum benar: "+e.message);}
+}catch(e){setMsg("Firebase gagal diinisialisasi: "+e.message);}
 </script>
 </body>
 </html>
