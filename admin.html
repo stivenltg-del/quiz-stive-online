@@ -32,7 +32,7 @@ th,td{text-align:left;padding:10px;border-bottom:1px solid #eee;white-space:nowr
 .scroll{overflow:auto}
 small{color:#69707e}
 @media(max-width:700px){.grid{grid-template-columns:1fr}.image-row{grid-template-columns:1fr 80px}.preview{width:80px;height:60px}}
-</style>
+.sound-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.sound-card{border:1px solid #e5e7eb;border-radius:14px;padding:13px;background:#fafbfc}.sound-preview{width:100%;margin-top:8px}@media(max-width:700px){.sound-grid{grid-template-columns:1fr}}</style>
 </head>
 <body>
 <main class="wrap">
@@ -73,7 +73,8 @@ small{color:#69707e}
     <div id="saveStatus" class="status"></div>
   </section>
 
-  <section id="resultsTab" class="hidden">
+  <section class="card" id="soundSettingsCard"><h2>🔊 Pengaturan Suara</h2><p><small>Upload suara sendiri dari HP. Klip maksimal sekitar 500 KB per suara.</small></p><div class="sound-grid"><div class="sound-card"><h3>Suara tombol</h3><input id="snd_button" type="file" accept="audio/*"><audio id="prev_button" class="sound-preview" controls></audio></div><div class="sound-card"><h3>0 poin</h3><input id="snd_0" type="file" accept="audio/*"><audio id="prev_0" class="sound-preview" controls></audio></div><div class="sound-card"><h3>1 poin</h3><input id="snd_1" type="file" accept="audio/*"><audio id="prev_1" class="sound-preview" controls></audio></div><div class="sound-card"><h3>2 poin</h3><input id="snd_2" type="file" accept="audio/*"><audio id="prev_2" class="sound-preview" controls></audio></div><div class="sound-card"><h3>3 poin</h3><input id="snd_3" type="file" accept="audio/*"><audio id="prev_3" class="sound-preview" controls></audio></div><div class="sound-card"><h3>4 poin</h3><input id="snd_4" type="file" accept="audio/*"><audio id="prev_4" class="sound-preview" controls></audio></div><div class="sound-card"><h3>5 poin</h3><input id="snd_5" type="file" accept="audio/*"><audio id="prev_5" class="sound-preview" controls></audio></div></div><div class="actions"><button id="saveSounds" type="button">💾 Simpan Pengaturan Suara</button><button id="clearSounds" type="button" class="secondary">Hapus Semua Suara</button></div><div id="soundStatus" class="status">Belum ada perubahan suara.</div></section>
+<section id="resultsTab" class="hidden">
     <div class="actions">
       <button id="refresh">Muat ulang hasil</button>
       <button id="export">Ekspor CSV</button>
@@ -88,21 +89,10 @@ small{color:#69707e}
 </section>
 </main>
 
-<script>
-window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyA_PEESWAuScYrU8Rd9uPS24UKvj5glT5I",
-  authDomain: "seberapa-kenal-sih.firebaseapp.com",
-  projectId: "seberapa-kenal-sih",
-  storageBucket: "seberapa-kenal-sih.firebasestorage.app",
-  messagingSenderId: "368960033210",
-  appId: "1:368960033210:web:fea06298c84a7df80d4d83",
-  measurementId: "G-0PV2V8TQW6"
-};
-</script>
-
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js">const SOUND_KEYS=["button","0","1","2","3","4","5"];const pendingSounds={};function readAudio(f){return new Promise((r,j)=>{const x=new FileReader();x.onload=()=>r(x.result);x.onerror=j;x.readAsDataURL(f)})}function ss(t){const e=document.getElementById("soundStatus");if(e)e.textContent=t}function sp(k,v){const a=document.getElementById("prev_"+k);if(a){a.src=v||"";a.style.display=v?"block":"none"}}async function loadSounds(){if(!db)return;try{const s=await db.collection("quizSettings").doc("sounds").get(),d=s.exists?s.data():{};SOUND_KEYS.forEach(k=>{if(d[k])sp(k,d[k])});ss(s.exists?"Pengaturan suara berhasil dimuat.":"Belum ada pengaturan suara.")}catch(e){ss("Gagal memuat suara: "+e.message)}}SOUND_KEYS.forEach(k=>{const i=document.getElementById("snd_"+k);if(i)i.onchange=async()=>{const f=i.files&&i.files[0];if(!f)return;if(f.size>500000){ss("File terlalu besar. Maksimal sekitar 250 KB.");i.value="";return}pendingSounds[k]=await readAudio(f);sp(k,pendingSounds[k]);ss("Suara siap disimpan.")}});document.getElementById("saveSounds")?.addEventListener("click",async()=>{if(!db)return;ss("Menyimpan suara...");try{const ref=db.collection("quizSettings").doc("sounds"),s=await ref.get(),d=s.exists?s.data():{};SOUND_KEYS.forEach(k=>{if(k in pendingSounds)d[k]=pendingSounds[k]});d.updatedAt=firebase.firestore.FieldValue.serverTimestamp();await ref.set(d);ss("✅ Pengaturan suara tersimpan.")}catch(e){ss("❌ Gagal menyimpan: "+e.message)}});document.getElementById("clearSounds")?.addEventListener("click",async()=>{if(!db||!confirm("Hapus semua suara custom?"))return;await db.collection("quizSettings").doc("sounds").set({button:"","0":"","1":"","2":"","3":"","4":"","5":""});SOUND_KEYS.forEach(k=>sp(k,""));ss("Suara custom dihapus.")});loadSounds();</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="./firebase-config.js"></script>
 <script>
 let auth=null,db=null,cache=[],quizData=null;
 const $=id=>document.getElementById(id);

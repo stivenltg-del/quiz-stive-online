@@ -168,7 +168,7 @@ textarea{min-height:75px;resize:vertical}
   .meme-check img{min-height:130px}
 }
 
-<style>.check-wrap{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:20px}.check-label{font-weight:800;font-size:16px}.meme-check{width:78px;height:78px;padding:0!important;border:3px solid #fff!important;border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 5px 14px rgba(0,0,0,.12);cursor:pointer}.meme-check img{width:100%;height:100%;object-fit:contain;display:block}.meme-check:active{transform:scale(.95)}@media(max-width:600px){.check-label{font-size:14px}.meme-check{width:68px;height:68px}}</style></style>
+<style>.check-wrap{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:20px}.check-label{font-weight:800;font-size:16px}.meme-check{width:78px;height:78px;padding:0!important;border:3px solid #fff!important;border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 5px 14px rgba(0,0,0,.12);cursor:pointer}.meme-check img{width:100%;height:100%;object-fit:contain;display:block}.meme-check:active{transform:scale(.95)}@media(max-width:600px){.check-label{font-size:14px}.meme-check{width:68px;height:68px}}.sound-toggle{position:fixed;right:14px;bottom:14px;z-index:99;border:0;border-radius:999px;padding:10px 14px;background:#202737;color:#fff}</style></style>
 
 <script>
 window.FIREBASE_CONFIG = {
@@ -180,7 +180,7 @@ window.FIREBASE_CONFIG = {
   appId: "1:368960033210:web:fea06298c84a7df80d4d83",
   measurementId: "G-0PV2V8TQW6"
 };
-</script>
+let quizSounds={button:"","0":"","1":"","2":"","3":"","4":"","5":""};let soundEnabled=true;const soundCache={};function playCustomSound(k){if(!soundEnabled)return;const src=quizSounds[String(k)]||"";if(!src)return;try{let a=soundCache[k]||(soundCache[k]=new Audio());a.src=src;a.currentTime=0;a.play().catch(()=>{})}catch(e){}}function loadQuizSounds(){try{if(!window.FIREBASE_CONFIG||window.FIREBASE_CONFIG.apiKey==="ISI_API_KEY")return;if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE_CONFIG);firebase.firestore().collection("quizSettings").doc("sounds").get().then(s=>{if(s.exists)quizSounds=Object.assign(quizSounds,s.data())}).catch(()=>{})}catch(e){}}function installSoundUI(){if(document.getElementById("soundToggle"))return;const b=document.createElement("button");b.id="soundToggle";b.className="sound-toggle";b.textContent="🔊 Suara ON";b.onclick=()=>{soundEnabled=!soundEnabled;b.textContent=soundEnabled?"🔊 Suara ON":"🔇 Suara OFF"};document.body.appendChild(b)}document.addEventListener("click",e=>{const b=e.target.closest("button");if(b&&b.id!=="soundToggle")playCustomSound("button")},true);document.addEventListener("click",e=>{const el=e.target.closest("[data-points]");if(el){const p=Number(el.dataset.points);if(Number.isFinite(p))setTimeout(()=>playCustomSound(p),40)}},true);loadQuizSounds();installSoundUI();</script>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
