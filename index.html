@@ -331,15 +331,52 @@ function selectOption(i){
   const o=randomizedOptions[i]||{};
   if(o.videoEnabled && o.videoUrl) openSpecialVideo(o.videoUrl);
 }
-function closeSpecialVideo(){const m=document.getElementById('videoModal'),v=document.getElementById('specialVideo');if(v){try{v.pause()}catch(e){};v.removeAttribute('src');v.load()}if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true')}}
-function openSpecialVideo(url){
-  const m=document.getElementById('videoModal'),v=document.getElementById('specialVideo'),h=document.getElementById('videoHint');
-  if(!m||!v||!url)return;
-  v.src=url;v.muted=false;v.volume=1;h.textContent='Video khusus untuk pilihan ini. Suara aktif.';m.classList.add('open');m.setAttribute('aria-hidden','false');
-  const p=v.play(); if(p&&typeof p.catch==='function')p.catch(()=>{h.textContent='Tekan tombol ▶ jika video belum otomatis berjalan. Suara tetap aktif.'});
+function ensureVideoModal(){
+  let m=document.getElementById('videoModal');
+  if(m)return m;
+  m=document.createElement('div');m.id='videoModal';m.setAttribute('aria-hidden','true');
+  m.style.cssText='position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.72);box-sizing:border-box';
+  m.innerHTML=`<div style="position:relative;width:min(92vw,520px);max-height:92vh;background:#111;border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4)"><button id="videoClose" aria-label="Tutup" style="position:absolute;right:10px;top:10px;z-index:3;width:40px;height:40px;border:0;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;font-size:24px;cursor:pointer">×</button><div id="videoStage" style="width:100%;aspect-ratio:9/16;background:#000;display:flex;align-items:center;justify-content:center"></div><div id="videoHint" style="padding:10px 14px;color:#fff;font-size:13px;background:#111"></div></div>`;
+  document.body.appendChild(m);
+  document.getElementById('videoClose').addEventListener('click',closeSpecialVideo);
+  m.addEventListener('click',e=>{if(e.target===m)closeSpecialVideo()});
+  return m;
 }
-document.getElementById('videoClose')?.addEventListener('click',closeSpecialVideo);
-document.getElementById('videoModal')?.addEventListener('click',e=>{if(e.target.id==='videoModal')closeSpecialVideo()});
+function getTikTokId(url){
+  try{
+    const u=new URL(url);
+    const m=u.pathname.match(/\/video\/(\d+)/)||u.pathname.match(/\/player\/v1\/(\d+)/);
+    return m?m[1]:null;
+  }catch(e){return null}
+}
+function closeSpecialVideo(){
+  const m=document.getElementById('videoModal'),stage=document.getElementById('videoStage');
+  if(stage)stage.innerHTML='';
+  if(m){m.style.display='none';m.setAttribute('aria-hidden','true')}
+}
+function openSpecialVideo(url){
+  if(!url)return;
+  const m=ensureVideoModal(),stage=document.getElementById('videoStage'),h=document.getElementById('videoHint');
+  const clean=String(url).trim(),tid=getTikTokId(clean);
+  stage.innerHTML='';
+  if(tid){
+    const iframe=document.createElement('iframe');
+    iframe.src=`https://www.tiktok.com/player/v1/${tid}?controls=1&description=1&music_info=1&loop=1`;
+    iframe.style.cssText='width:100%;height:100%;border:0;display:block';
+    iframe.setAttribute('allow','fullscreen; autoplay');
+    iframe.setAttribute('allowfullscreen','');
+    iframe.title='TikTok video';
+    stage.appendChild(iframe);
+    h.textContent='TikTok siap diputar. Jika belum otomatis, tekan ▶. Suara tersedia dari kontrol TikTok.';
+  }else{
+    const v=document.createElement('video');
+    v.id='specialVideo';v.controls=true;v.playsInline=true;v.preload='metadata';v.style.cssText='width:100%;height:100%;object-fit:contain;display:block';
+    v.src=clean;v.volume=1;stage.appendChild(v);
+    h.textContent='Video langsung. Tekan ▶ jika belum otomatis.';
+    const p=v.play();if(p&&typeof p.catch==='function')p.catch(()=>{});
+  }
+  m.style.display='flex';m.setAttribute('aria-hidden','false');
+}
 
 function checkAnswer(){
   if(selected===null||checked)return;
