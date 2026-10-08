@@ -24,15 +24,31 @@ button.danger{background:#c93b4b}
 .qhead{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .option{border:1px solid #eee;border-radius:14px;padding:12px;margin:12px 0;background:#fafbfc}
 .image-row{display:grid;grid-template-columns:1fr 100px;gap:10px;align-items:end}
-.preview{width:100px;height:75px;border-radius:10px;object-fit:cover;border:1px solid #ddd;background:#f1f2f5}
+.preview{width:100px;height:100px;border-radius:10px;object-fit:cover;border:1px solid #ddd;background:#f1f2f5}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
 .status{padding:10px;border-radius:10px;background:#f4f6fb;margin:10px 0}
 table{width:100%;border-collapse:collapse;margin-top:12px}
 th,td{text-align:left;padding:10px;border-bottom:1px solid #eee;white-space:nowrap}
 .scroll{overflow:auto}
 small{color:#69707e}
-@media(max-width:700px){.grid{grid-template-columns:1fr}.image-row{grid-template-columns:1fr 80px}.preview{width:80px;height:60px}}
+@media(max-width:700px){.grid{grid-template-columns:1fr}.image-row{grid-template-columns:1fr 80px}.preview{width:80px;height:80px}}
 .sound-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.sound-card{border:1px solid #e5e7eb;border-radius:14px;padding:13px;background:#fafbfc}.sound-preview{width:100%;margin-top:8px}@media(max-width:700px){.sound-grid{grid-template-columns:1fr}}</style>
+
+<style>
+/* 1:1 image cropper */
+.crop-modal{position:fixed;inset:0;background:rgba(10,14,24,.72);display:none;align-items:center;justify-content:center;z-index:9999;padding:16px}
+.crop-modal.show{display:flex}
+.crop-box{width:min(680px,100%);background:#fff;border-radius:22px;padding:18px;box-shadow:0 20px 70px rgba(0,0,0,.28)}
+.crop-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.crop-stage{width:min(560px,90vw);height:min(560px,70vh);margin:auto;background:#111;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:16px;touch-action:none;position:relative}
+.crop-image{max-width:none;max-height:none;position:absolute;user-select:none;touch-action:none;cursor:grab}
+.crop-image.dragging{cursor:grabbing}
+.crop-square{position:absolute;width:min(88%,88%);aspect-ratio:1/1;border:3px solid #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.42);pointer-events:none;border-radius:4px}
+.crop-controls{display:flex;gap:8px;align-items:center;margin-top:12px}
+.crop-controls input{flex:1}
+.crop-help{font-size:12px;color:#69707e;margin:8px 0 0}
+@media(max-width:600px){.crop-box{padding:12px}.crop-stage{height:62vh}.crop-controls button{padding:9px}}
+</style>
 </head>
 <body>
 <main class="wrap">
@@ -73,7 +89,7 @@ small{color:#69707e}
     <div id="saveStatus" class="status"></div>
   </section>
 
-  <section class="card" id="soundSettingsCard"><h2>🔊 Pengaturan Suara</h2><p><small>Upload suara sendiri dari HP. Klip maksimal sekitar 500 KB per suara.</small></p><div class="sound-grid"><div class="sound-card"><h3>Suara tombol</h3><input id="snd_button" type="file" accept="audio/*"><audio id="prev_button" class="sound-preview" controls></audio></div><div class="sound-card"><h3>0 poin</h3><input id="snd_0" type="file" accept="audio/*"><audio id="prev_0" class="sound-preview" controls></audio></div><div class="sound-card"><h3>1 poin</h3><input id="snd_1" type="file" accept="audio/*"><audio id="prev_1" class="sound-preview" controls></audio></div><div class="sound-card"><h3>2 poin</h3><input id="snd_2" type="file" accept="audio/*"><audio id="prev_2" class="sound-preview" controls></audio></div><div class="sound-card"><h3>3 poin</h3><input id="snd_3" type="file" accept="audio/*"><audio id="prev_3" class="sound-preview" controls></audio></div><div class="sound-card"><h3>4 poin</h3><input id="snd_4" type="file" accept="audio/*"><audio id="prev_4" class="sound-preview" controls></audio></div><div class="sound-card"><h3>5 poin</h3><input id="snd_5" type="file" accept="audio/*"><audio id="prev_5" class="sound-preview" controls></audio></div></div><div class="actions"><button id="saveSounds" type="button">💾 Simpan Pengaturan Suara</button><button id="clearSounds" type="button" class="secondary">Hapus Semua Suara</button></div><div id="soundStatus" class="status">Belum ada perubahan suara.</div></section>
+  <section class="card" id="soundSettingsCard"><h2>🔊 Pengaturan Suara</h2><p><small>Upload suara sendiri dari HP. Klip maksimal sekitar 700 KB per suara. Suara disimpan terpisah agar tidak memenuhi batas dokumen Firestore.</small></p><div class="sound-grid"><div class="sound-card"><h3>Suara tombol</h3><input id="snd_button" type="file" accept="audio/*"><audio id="prev_button" class="sound-preview" controls></audio></div><div class="sound-card"><h3>0 poin</h3><input id="snd_0" type="file" accept="audio/*"><audio id="prev_0" class="sound-preview" controls></audio></div><div class="sound-card"><h3>1 poin</h3><input id="snd_1" type="file" accept="audio/*"><audio id="prev_1" class="sound-preview" controls></audio></div><div class="sound-card"><h3>2 poin</h3><input id="snd_2" type="file" accept="audio/*"><audio id="prev_2" class="sound-preview" controls></audio></div><div class="sound-card"><h3>3 poin</h3><input id="snd_3" type="file" accept="audio/*"><audio id="prev_3" class="sound-preview" controls></audio></div><div class="sound-card"><h3>4 poin</h3><input id="snd_4" type="file" accept="audio/*"><audio id="prev_4" class="sound-preview" controls></audio></div><div class="sound-card"><h3>5 poin</h3><input id="snd_5" type="file" accept="audio/*"><audio id="prev_5" class="sound-preview" controls></audio></div></div><div class="actions"><button id="saveSounds" type="button">💾 Simpan Pengaturan Suara</button><button id="clearSounds" type="button" class="secondary">Hapus Semua Suara</button></div><div id="soundStatus" class="status">Belum ada perubahan suara.</div></section>
 <section id="resultsTab" class="hidden">
     <div class="actions">
       <button id="refresh">Muat ulang hasil</button>
@@ -162,17 +178,17 @@ function renderEditor(data){
         <label>Keterangan / penjelasan</label><textarea class="o-explanation">${esc(o.explanation||"")}</textarea>
         <div class="image-row">
           <div>
-            <label>Gambar reaction setelah memilih</label>
+            <label>Gambar reaction setelah memilih (WAJIB 1:1)</label>
             <input class="r-file" type="file" accept="image/*">
             <input class="o-reaction" value="${esc(o.reactionImage||"")}" placeholder="URL reaction (opsional)">
-            <small>Gambar ini muncul setelah peserta menekan Cek Jawa.</small>
+            <small>Upload → potong → hasil otomatis 1:1. Gambar ini muncul setelah peserta menekan Cek Jawa.</small>
           </div>
           <img class="preview r-preview" src="${esc(o.reactionImage||"")}" onerror="this.style.opacity=.35">
         </div>`;
       const file=op.querySelector(".o-file"), img=op.querySelector(".o-image"), prev=op.querySelector(".preview");
       const rfile=op.querySelector(".r-file"), rimg=op.querySelector(".o-reaction"), rprev=op.querySelector(".r-preview");
       file.onchange=async()=>{if(file.files[0]){const data=await compressImage(file.files[0]);img.value=data;prev.src=data;prev.style.opacity=1;}};
-      rfile.onchange=async()=>{if(rfile.files[0]){const data=await compressImage(rfile.files[0],1000,0.72);rimg.value=data;rprev.src=data;rprev.style.opacity=1;}};
+      rfile.onchange=()=>{if(rfile.files[0]){window.openReactionCrop(rfile.files[0],rimg,rprev);rfile.value="";}};
       img.oninput=()=>{prev.src=img.value;prev.style.opacity=1};
       rimg.oninput=()=>{rprev.src=rimg.value;rprev.style.opacity=1};
       opts.appendChild(op);
@@ -303,7 +319,69 @@ try{
   if(window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.apiKey&&window.FIREBASE_CONFIG.apiKey){
     firebase.initializeApp(window.FIREBASE_CONFIG);
     auth=firebase.auth();db=firebase.firestore();
-    const SOUND_KEYS=["button","0","1","2","3","4","5"];const pendingSounds={};function readAudio(f){return new Promise((r,j)=>{const x=new FileReader();x.onload=()=>r(x.result);x.onerror=j;x.readAsDataURL(f)})}function ss(t){const e=document.getElementById("soundStatus");if(e)e.textContent=t}function sp(k,v){const a=document.getElementById("prev_"+k);if(a){a.src=v||"";a.style.display=v?"block":"none"}}async function loadSounds(){if(!db)return;try{const s=await db.collection("quizSettings").doc("sounds").get(),d=s.exists?s.data():{};SOUND_KEYS.forEach(k=>{if(d[k])sp(k,d[k])});ss(s.exists?"Pengaturan suara berhasil dimuat.":"Belum ada pengaturan suara.")}catch(e){ss("Gagal memuat suara: "+e.message)}}SOUND_KEYS.forEach(k=>{const i=document.getElementById("snd_"+k);if(i)i.onchange=async()=>{const f=i.files&&i.files[0];if(!f)return;if(f.size>500000){ss("File terlalu besar. Maksimal sekitar 500 KB.");i.value="";return}pendingSounds[k]=await readAudio(f);sp(k,pendingSounds[k]);ss("Suara siap disimpan.")}});document.getElementById("saveSounds")?.addEventListener("click",async()=>{if(!db)return;ss("Menyimpan suara...");try{const ref=db.collection("quizSettings").doc("sounds"),s=await ref.get(),d=s.exists?s.data():{};SOUND_KEYS.forEach(k=>{if(k in pendingSounds)d[k]=pendingSounds[k]});d.updatedAt=firebase.firestore.FieldValue.serverTimestamp();await ref.set(d);ss("✅ Pengaturan suara tersimpan.")}catch(e){ss("❌ Gagal menyimpan: "+e.message)}});document.getElementById("clearSounds")?.addEventListener("click",async()=>{if(!db||!confirm("Hapus semua suara custom?"))return;await db.collection("quizSettings").doc("sounds").set({button:"","0":"","1":"","2":"","3":"","4":"","5":""});SOUND_KEYS.forEach(k=>sp(k,""));ss("Suara custom dihapus.")});
+    const SOUND_KEYS=["button","0","1","2","3","4","5"];
+    const pendingSounds={};
+    function readAudio(f){return new Promise((r,j)=>{const x=new FileReader();x.onload=()=>r(x.result);x.onerror=j;x.readAsDataURL(f)})}
+    function ss(t){const e=document.getElementById("soundStatus");if(e)e.textContent=t}
+    function sp(k,v){const a=document.getElementById("prev_"+k);if(a){a.src=v||"";a.style.display=v?"block":"none"}}
+    async function loadSounds(){
+      if(!db)return;
+      try{
+        let found=0;
+        for(const k of SOUND_KEYS){
+          const s=await db.collection("quizSounds").doc(k).get();
+          if(s.exists && typeof s.data().dataUrl==="string"){sp(k,s.data().dataUrl);found++}
+        }
+        // Also read the old format so existing uploaded sounds are not lost.
+        const old=await db.collection("quizSettings").doc("sounds").get();
+        if(old.exists){
+          const d=old.data()||{};
+          for(const k of SOUND_KEYS){
+            const a=document.getElementById("prev_"+k);
+            if(a && !a.src && typeof d[k]==="string" && d[k]){sp(k,d[k]);found++}
+          }
+        }
+        ss(found?"Pengaturan suara berhasil dimuat.":"Belum ada pengaturan suara.");
+      }catch(e){ss("Gagal memuat suara: "+e.message)}
+    }
+    SOUND_KEYS.forEach(k=>{
+      const i=document.getElementById("snd_"+k);
+      if(i)i.onchange=async()=>{
+        const f=i.files&&i.files[0];
+        if(!f)return;
+        if(f.size>700000){
+          ss("File terlalu besar. Maksimal 700 KB per suara.");
+          i.value="";
+          return;
+        }
+        pendingSounds[k]=await readAudio(f);
+        sp(k,pendingSounds[k]);
+        ss("Suara siap disimpan.");
+      };
+    });
+    document.getElementById("saveSounds")?.addEventListener("click",async()=>{
+      if(!db)return;
+      ss("Menyimpan suara...");
+      try{
+        for(const k of SOUND_KEYS){
+          if(k in pendingSounds){
+            await db.collection("quizSounds").doc(k).set({
+              dataUrl:pendingSounds[k],
+              updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+            });
+          }
+        }
+        ss("✅ Pengaturan suara tersimpan.");
+      }catch(e){ss("❌ Gagal menyimpan: "+e.message)}
+    });
+    document.getElementById("clearSounds")?.addEventListener("click",async()=>{
+      if(!db||!confirm("Hapus semua suara custom?"))return;
+      try{
+        for(const k of SOUND_KEYS)await db.collection("quizSounds").doc(k).set({dataUrl:"",updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+        SOUND_KEYS.forEach(k=>sp(k,""));
+        ss("Suara custom dihapus.");
+      }catch(e){ss("❌ Gagal menghapus: "+e.message)}
+    });
     loadSounds();
     auth.onAuthStateChanged(async u=>{
       if(u){$("login").classList.add("hidden");$("panel").classList.remove("hidden");$("who").textContent="Login: "+u.email;await loadQuiz();}
@@ -311,6 +389,126 @@ try{
     });
   }
 }catch(e){setMsg("Firebase gagal diinisialisasi: "+e.message);}
+</script>
+
+<div id="cropModal" class="crop-modal" aria-hidden="true">
+  <div class="crop-box">
+    <div class="crop-head">
+      <div>
+        <h2 style="margin:0">✂️ Potong Gambar</h2>
+        <small>Hasil reaction selalu 1:1 (kotak).</small>
+      </div>
+      <button type="button" class="secondary" id="cropCancel">Tutup</button>
+    </div>
+    <div id="cropStage" class="crop-stage">
+      <img id="cropImage" class="crop-image" alt="Preview crop">
+      <div class="crop-square"></div>
+    </div>
+    <div class="crop-controls">
+      <button type="button" id="cropMinus">−</button>
+      <input id="cropZoom" type="range" min="1" max="3" step="0.01" value="1">
+      <button type="button" id="cropPlus">+</button>
+      <button type="button" id="cropApply">✅ Gunakan</button>
+    </div>
+    <p class="crop-help">Geser gambar untuk mengatur posisi, lalu atur zoom. Area putih adalah hasil 1:1.</p>
+  </div>
+</div>
+
+<script>
+/* Reaction cropper: output is always a square 1:1 JPEG. */
+(function(){
+  const modal=document.getElementById("cropModal");
+  const stage=document.getElementById("cropStage");
+  const img=document.getElementById("cropImage");
+  const zoom=document.getElementById("cropZoom");
+  const apply=document.getElementById("cropApply");
+  const cancel=document.getElementById("cropCancel");
+  const minus=document.getElementById("cropMinus");
+  const plus=document.getElementById("cropPlus");
+  if(!modal)return;
+
+  let targetInput=null, targetPreview=null, sourceImage=null;
+  let scale=1, baseScale=1, x=0, y=0, dragging=false, sx=0, sy=0, startX=0, startY=0;
+
+  function openCrop(file,input,preview){
+    targetInput=input; targetPreview=preview;
+    const fr=new FileReader();
+    fr.onload=()=>{
+      sourceImage=new Image();
+      sourceImage.onload=()=>{
+        const sw=stage.clientWidth, sh=stage.clientHeight;
+        baseScale=Math.max(sw/sourceImage.naturalWidth, sh/sourceImage.naturalHeight)*.88;
+        scale=baseScale;
+        x=sw/2; y=sh/2;
+        zoom.value=1;
+        img.src=fr.result;
+        update();
+        modal.classList.add("show");
+        modal.setAttribute("aria-hidden","false");
+      };
+      sourceImage.src=fr.result;
+    };
+    fr.readAsDataURL(file);
+  }
+
+  function update(){
+    img.style.width=(sourceImage.naturalWidth*scale)+"px";
+    img.style.height=(sourceImage.naturalHeight*scale)+"px";
+    img.style.left=x+"px";
+    img.style.top=y+"px";
+    img.style.transform="translate(-50%,-50%)";
+  }
+
+  function setZoom(v){
+    const old=scale;
+    scale=baseScale*Number(v);
+    // keep center stable
+    update();
+  }
+
+  zoom.addEventListener("input",()=>setZoom(zoom.value));
+  minus.onclick=()=>{zoom.value=Math.max(1,Number(zoom.value)-.1);setZoom(zoom.value)};
+  plus.onclick=()=>{zoom.value=Math.min(3,Number(zoom.value)+.1);setZoom(zoom.value)};
+
+  function pointerDown(e){
+    dragging=true; img.classList.add("dragging");
+    sx=e.clientX; sy=e.clientY; startX=x; startY=y;
+    if(img.setPointerCapture)img.setPointerCapture(e.pointerId);
+  }
+  function pointerMove(e){
+    if(!dragging)return;
+    x=startX+(e.clientX-sx); y=startY+(e.clientY-sy); update();
+  }
+  function pointerUp(){dragging=false;img.classList.remove("dragging")}
+  img.addEventListener("pointerdown",pointerDown);
+  img.addEventListener("pointermove",pointerMove);
+  img.addEventListener("pointerup",pointerUp);
+  img.addEventListener("pointercancel",pointerUp);
+
+  function close(){modal.classList.remove("show");modal.setAttribute("aria-hidden","true");targetInput=null;targetPreview=null;sourceImage=null}
+
+  cancel.onclick=close;
+  modal.addEventListener("click",e=>{if(e.target===modal)close()});
+
+  apply.onclick=()=>{
+    if(!sourceImage||!targetInput)return;
+    const side=800;
+    const cropSide=Math.min(stage.clientWidth,stage.clientHeight)*.88;
+    const sx0=(stage.clientWidth/2-cropSide/2-x+sourceImage.naturalWidth*scale/2)/scale;
+    const sy0=(stage.clientHeight/2-cropSide/2-y+sourceImage.naturalHeight*scale/2)/scale;
+    const srcSide=cropSide/scale;
+    const c=document.createElement("canvas"); c.width=side;c.height=side;
+    const ctx=c.getContext("2d");
+    ctx.drawImage(sourceImage,sx0,sy0,srcSide,srcSide,0,0,side,side);
+    const data=c.toDataURL("image/jpeg",.82);
+    targetInput.value=data;
+    if(targetPreview){targetPreview.src=data;targetPreview.style.opacity=1}
+    targetInput.dispatchEvent(new Event("input",{bubbles:true}));
+    close();
+  };
+
+  window.openReactionCrop=openCrop;
+})();
 </script>
 </body>
 </html>

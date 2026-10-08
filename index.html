@@ -172,9 +172,28 @@ textarea{min-height:75px;resize:vertical}
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="./firebase-config.js"></script>
+<script>window.FIREBASE_CONFIG = {
+  apiKey: "AIzaSyA_PEESWAuScYrU8Rd9uPS24UKvj5glT5I",
+  authDomain: "seberapa-kenal-sih.firebaseapp.com",
+  projectId: "seberapa-kenal-sih",
+  storageBucket: "seberapa-kenal-sih.firebasestorage.app",
+  messagingSenderId: "368960033210",
+  appId: "1:368960033210:web:fea06298c84a7df80d4d83",
+  measurementId: "G-0PV2V8TQW6"
+};</script>
 <style>
 .name-modal{position:fixed;inset:0;background:rgba(20,25,38,.45);display:grid;place-items:center;padding:20px;z-index:50}.name-box{width:min(420px,100%);background:#fff;border-radius:24px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.2);text-align:center}.name-box h2{margin:0 0 8px}.name-box p{color:#8d93a0;margin:0 0 18px}.name-box input{width:100%;padding:14px 16px;border:1px solid #dddfe7;border-radius:14px;font-size:16px;outline:none}.name-box button{margin-top:12px;width:100%;justify-content:center}.name-error{color:#d9534f;font-size:13px;min-height:18px;margin-top:8px}.submit-status{font-size:13px;color:#777;margin-top:10px}.name-box.hidden{display:none!important}
+</style>
+
+<style>
+/* Reaction images are always presented as a square. */
+.reaction-img, .reaction-image, #reactionImage{
+  aspect-ratio:1/1 !important;
+  width:100% !important;
+  object-fit:cover !important;
+  display:block;
+  border-radius:16px;
+}
 </style>
 </head>
 <body>
@@ -360,45 +379,134 @@ loadQuizFromFirebase();
 
 </script>
 
-<!-- Custom sound system -->
+
+<!-- QUIZ STIVE: SISTEM SUARA TERHUBUNG FIREBASE -->
 <style>
-.sound-toggle{border:1px solid #e6e7ec;background:#fff;border-radius:18px;padding:10px 14px;font-weight:700;cursor:pointer;color:#202737}.sound-toggle.off{opacity:.55}
+.sound-toggle{
+  border:1px solid #e6e7ec;background:#fff;color:#202737;
+  border-radius:18px;padding:10px 14px;font-weight:800;
+  cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.03)
+}
+.sound-toggle.off{opacity:.55}
+@media(max-width:600px){.sound-toggle{padding:9px 10px;font-size:13px}}
 </style>
 <script>
-let soundEnabled = localStorage.getItem('quizSoundEnabled') !== '0';
-const customSounds = {button:'',0:'',1:'',2:'',3:'',4:'',5:''};
-function updateSoundButton(){const b=document.getElementById('soundToggle');if(!b)return;b.textContent=soundEnabled?'🔊 Suara ON':'🔇 Suara OFF';b.classList.toggle('off',!soundEnabled);}
-function toggleSound(){soundEnabled=!soundEnabled;localStorage.setItem('quizSoundEnabled',soundEnabled?'1':'0');updateSoundButton();if(soundEnabled)playCustomSound('button');}
-function playCustomSound(key){if(!soundEnabled)return;const src=customSounds[String(key)];if(!src)return;try{const a=new Audio(src);a.volume=.9;a.play().catch(()=>{});}catch(e){}}
-async function loadCustomSounds(){
-  if(!window.FIREBASE_CONFIG || window.FIREBASE_CONFIG.apiKey==='ISI_API_KEY')return;
-  try{
-    if(!firebase.apps.length) firebase.initializeApp(window.FIREBASE_CONFIG);
-    const db=firebase.firestore();
-    const snap=await db.collection('quizSettings').doc('sounds').get();
-    if(snap.exists){const d=snap.data()||{};Object.keys(customSounds).forEach(k=>{if(typeof d[k]==='string')customSounds[k]=d[k];});}
-  }catch(e){console.warn('Suara custom belum tersedia.',e);}
+const QUIZ_SOUND_KEYS = ["button","0","1","2","3","4","5"];
+const quizCustomSounds = {button:"",0:"",1:"",2:"",3:"",4:"",5:""};
+let quizSoundEnabled = localStorage.getItem("quizSoundEnabled") !== "0";
+let quizSoundReady = false;
+
+function updateSoundButton(){
+  const b=document.getElementById("soundToggle");
+  if(!b)return;
+  b.textContent=quizSoundEnabled ? "🔊 Suara ON" : "🔇 Suara OFF";
+  b.classList.toggle("off",!quizSoundEnabled);
+  b.setAttribute("aria-label",quizSoundEnabled ? "Matikan suara" : "Nyalakan suara");
 }
+
 function installSoundUI(){
-  const top=document.querySelector('.topbar');
-  if(top && !document.getElementById('soundToggle')){const b=document.createElement('button');b.id='soundToggle';b.className='sound-toggle';b.type='button';b.onclick=toggleSound;top.appendChild(b);}
+  const top=document.querySelector(".topbar");
+  if(!top || document.getElementById("soundToggle"))return;
+  const b=document.createElement("button");
+  b.id="soundToggle";
+  b.className="sound-toggle";
+  b.type="button";
+  b.textContent=quizSoundEnabled ? "🔊 Suara ON" : "🔇 Suara OFF";
+  b.onclick=function(){
+    quizSoundEnabled=!quizSoundEnabled;
+    localStorage.setItem("quizSoundEnabled",quizSoundEnabled?"1":"0");
+    updateSoundButton();
+    if(quizSoundEnabled) playQuizSound("button");
+  };
+  top.appendChild(b);
   updateSoundButton();
 }
-const _oldStartQuiz=startQuiz;
-startQuiz=function(){playCustomSound('button');return _oldStartQuiz.apply(this,arguments)};
-const _oldSelectOption=selectOption;
-selectOption=function(i){playCustomSound('button');return _oldSelectOption.apply(this,arguments)};
-const _oldCheckAnswer=checkAnswer;
-checkAnswer=function(){
-  if(selected===null)return;
-  const pts=Number(quiz.questions[current].options[selected]?.points)||0;
-  playCustomSound(pts);
-  return _oldCheckAnswer.apply(this,arguments);
-};
-const _oldNextQuestion=nextQuestion;
-nextQuestion=function(){playCustomSound('button');return _oldNextQuestion.apply(this,arguments)};
-window.addEventListener('load',()=>{installSoundUI();loadCustomSounds();});
-</script>
 
+function playQuizSound(key){
+  if(!quizSoundEnabled)return;
+  const src=quizCustomSounds[String(key)];
+  if(!src)return;
+  try{
+    const a=new Audio(src);
+    a.preload="auto";
+    a.volume=.9;
+    const p=a.play();
+    if(p && p.catch)p.catch(()=>{});
+  }catch(e){}
+}
+
+async function ensureQuizFirebase(){
+  if(!window.FIREBASE_CONFIG || window.FIREBASE_CONFIG.apiKey==="ISI_API_KEY")return null;
+  try{
+    if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE_CONFIG);
+    return firebase.firestore();
+  }catch(e){
+    console.warn("Firebase suara tidak siap:",e);
+    return null;
+  }
+}
+
+async function loadQuizSounds(){
+  const db=await ensureQuizFirebase();
+  if(!db)return;
+  try{
+    // New format: one sound per document, avoiding Firestore's 1 MiB document limit.
+    for(const key of QUIZ_SOUND_KEYS){
+      const snap=await db.collection("quizSounds").doc(key).get();
+      if(snap.exists && typeof snap.data().dataUrl==="string"){
+        quizCustomSounds[key]=snap.data().dataUrl;
+      }
+    }
+    // Backward compatibility with the older quizSettings/sounds document.
+    const old=await db.collection("quizSettings").doc("sounds").get();
+    if(old.exists){
+      const d=old.data()||{};
+      for(const key of QUIZ_SOUND_KEYS){
+        if(!quizCustomSounds[key] && typeof d[key]==="string")quizCustomSounds[key]=d[key];
+      }
+    }
+    quizSoundReady=true;
+  }catch(e){
+    console.warn("Suara custom belum tersedia:",e);
+  }
+}
+
+function wrapQuizSoundFunctions(){
+  if(typeof window.startQuiz==="function" && !window.startQuiz.__soundWrapped){
+    const fn=window.startQuiz;
+    const wrapped=function(){playQuizSound("button");return fn.apply(this,arguments)};
+    wrapped.__soundWrapped=true; window.startQuiz=wrapped;
+  }
+  if(typeof window.selectOption==="function" && !window.selectOption.__soundWrapped){
+    const fn=window.selectOption;
+    const wrapped=function(i){playQuizSound("button");return fn.apply(this,arguments)};
+    wrapped.__soundWrapped=true; window.selectOption=wrapped;
+  }
+  if(typeof window.checkAnswer==="function" && !window.checkAnswer.__soundWrapped){
+    const fn=window.checkAnswer;
+    const wrapped=function(){
+      if(typeof selected!=="undefined" && selected!==null && typeof quiz!=="undefined" &&
+         quiz.questions && quiz.questions[current]){
+        const pts=Number(quiz.questions[current].options[selected]?.points)||0;
+        playQuizSound(pts);
+      }
+      return fn.apply(this,arguments);
+    };
+    wrapped.__soundWrapped=true; window.checkAnswer=wrapped;
+  }
+  if(typeof window.nextQuestion==="function" && !window.nextQuestion.__soundWrapped){
+    const fn=window.nextQuestion;
+    const wrapped=function(){playQuizSound("button");return fn.apply(this,arguments)};
+    wrapped.__soundWrapped=true; window.nextQuestion=wrapped;
+  }
+}
+
+window.addEventListener("DOMContentLoaded",function(){
+  installSoundUI();
+  // Existing quiz functions are declared before this block.
+  wrapQuizSoundFunctions();
+  loadQuizSounds();
+});
+</script>
 </body>
 </html>
