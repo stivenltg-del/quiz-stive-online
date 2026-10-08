@@ -329,8 +329,52 @@ function selectOption(i){
   selected=i;
   document.querySelectorAll(".option").forEach((el,n)=>el.classList.toggle("selected",n===i));
   const o=randomizedOptions[i]||{};
-  if(o.videoEnabled && o.videoUrl) openSpecialVideo(o.videoUrl);
+  if(o.videoEnabled && o.videoUrl){
+    showInlineVideo(o);
+  }else{
+    document.getElementById("feedback").classList.add("hidden");
+  }
 }
+function getTikTokId(url){
+  try{
+    const u=new URL(String(url).trim());
+    const m=u.pathname.match(/\/video\/(\d+)/)||u.pathname.match(/\/player\/v1\/(\d+)/);
+    return m?m[1]:null;
+  }catch(e){return null}
+}
+function makeInlineVideo(url){
+  const wrap=document.createElement("div");
+  wrap.className="inline-special-video";
+  wrap.style.cssText="margin-top:16px;border-radius:18px;overflow:hidden;background:#000;position:relative;width:100%;aspect-ratio:9/16;max-height:520px";
+  const clean=String(url||"").trim();
+  const tid=getTikTokId(clean);
+  if(tid){
+    const iframe=document.createElement("iframe");
+    iframe.src=`https://www.tiktok.com/player/v1/${tid}?controls=1&description=1&music_info=1&loop=1`;
+    iframe.style.cssText="width:100%;height:100%;border:0;display:block";
+    iframe.setAttribute("allow","fullscreen; autoplay");
+    iframe.setAttribute("allowfullscreen","");
+    iframe.title="TikTok video";
+    wrap.appendChild(iframe);
+  }else{
+    const v=document.createElement("video");
+    v.controls=true;v.playsInline=true;v.preload="metadata";v.style.cssText="width:100%;height:100%;object-fit:contain;display:block";
+    v.src=clean;v.volume=1;
+    wrap.appendChild(v);
+  }
+  return wrap;
+}
+function showInlineVideo(o){
+  const f=document.getElementById("feedback");
+  if(!f)return;
+  f.innerHTML="";
+  const h=document.createElement("h2");
+  h.textContent="🎬 Video khusus";
+  f.appendChild(h);
+  f.appendChild(makeInlineVideo(o.videoUrl));
+  f.classList.remove("hidden");
+}
+
 function ensureVideoModal(){
   let m=document.getElementById('videoModal');
   if(m)return m;
@@ -341,13 +385,6 @@ function ensureVideoModal(){
   document.getElementById('videoClose').addEventListener('click',closeSpecialVideo);
   m.addEventListener('click',e=>{if(e.target===m)closeSpecialVideo()});
   return m;
-}
-function getTikTokId(url){
-  try{
-    const u=new URL(url);
-    const m=u.pathname.match(/\/video\/(\d+)/)||u.pathname.match(/\/player\/v1\/(\d+)/);
-    return m?m[1]:null;
-  }catch(e){return null}
 }
 function closeSpecialVideo(){
   const m=document.getElementById('videoModal'),stage=document.getElementById('videoStage');
@@ -388,8 +425,10 @@ function checkAnswer(){
   renderLives();
   document.getElementById("checkBtn").classList.add("hidden");
   const f=document.getElementById("feedback");
-  const reaction=o.reactionImage?`<img src="${escapeAttr(o.reactionImage)}" onerror="this.style.display='none'">`:"";
-  f.innerHTML=`<h2>${escapeHTML(o.feedback||"")}</h2><p>${escapeHTML(o.explanation||"")}</p>${reaction}`;f.classList.remove("hidden");
+  const reaction=(!o.videoEnabled && o.reactionImage)?`<img src="${escapeAttr(o.reactionImage)}" onerror="this.style.display='none'">`:"";
+  f.innerHTML=`<h2>${escapeHTML(o.feedback||"")}</h2><p>${escapeHTML(o.explanation||"")}</p>${reaction}`;
+  if(o.videoEnabled && o.videoUrl) f.appendChild(makeInlineVideo(o.videoUrl));
+  f.classList.remove("hidden");
   if(participantLives<=0){
     f.innerHTML=`<h2>💔 Darah habis!</h2><p>Quiz akan dimulai ulang dari awal.</p>`;
     document.getElementById("nextBtn").classList.add("hidden");

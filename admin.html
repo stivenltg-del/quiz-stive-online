@@ -600,7 +600,11 @@ function syncEditorIntoData(){
       points:safeNum(op.querySelector(".o-points").value,0),
       feedback:op.querySelector(".o-feedback").value,
       explanation:op.querySelector(".o-explanation").value,
-      reactionImage:op.querySelector(".o-reaction").value
+      reactionImage:op.querySelector(".o-reaction").value,
+      videoEnabled:op.querySelector(".o-video-enabled")?.checked||false,
+      videoType:"url",
+      videoUrl:op.querySelector(".o-video-url")?.value.trim()||"",
+      videoStoragePath:""
     }))
   }));
 }
