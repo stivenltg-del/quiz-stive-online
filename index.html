@@ -168,22 +168,11 @@ textarea{min-height:75px;resize:vertical}
   .meme-check img{min-height:130px}
 }
 
-<style>.check-wrap{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:20px}.check-label{font-weight:800;font-size:16px}.meme-check{width:78px;height:78px;padding:0!important;border:3px solid #fff!important;border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 5px 14px rgba(0,0,0,.12);cursor:pointer}.meme-check img{width:100%;height:100%;object-fit:contain;display:block}.meme-check:active{transform:scale(.95)}@media(max-width:600px){.check-label{font-size:14px}.meme-check{width:68px;height:68px}}.sound-toggle{position:fixed;right:14px;bottom:14px;z-index:99;border:0;border-radius:999px;padding:10px 14px;background:#202737;color:#fff}</style></style>
-
-<script>
-window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyA_PEESWAuScYrU8Rd9uPS24UKvj5glT5I",
-  authDomain: "seberapa-kenal-sih.firebaseapp.com",
-  projectId: "seberapa-kenal-sih",
-  storageBucket: "seberapa-kenal-sih.firebasestorage.app",
-  messagingSenderId: "368960033210",
-  appId: "1:368960033210:web:fea06298c84a7df80d4d83",
-  measurementId: "G-0PV2V8TQW6"
-};
-let quizSounds={button:"","0":"","1":"","2":"","3":"","4":"","5":""};let soundEnabled=true;const soundCache={};function playCustomSound(k){if(!soundEnabled)return;const src=quizSounds[String(k)]||"";if(!src)return;try{let a=soundCache[k]||(soundCache[k]=new Audio());a.src=src;a.currentTime=0;a.play().catch(()=>{})}catch(e){}}function loadQuizSounds(){try{if(!window.FIREBASE_CONFIG||window.FIREBASE_CONFIG.apiKey==="ISI_API_KEY")return;if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE_CONFIG);firebase.firestore().collection("quizSettings").doc("sounds").get().then(s=>{if(s.exists)quizSounds=Object.assign(quizSounds,s.data())}).catch(()=>{})}catch(e){}}function installSoundUI(){if(document.getElementById("soundToggle"))return;const b=document.createElement("button");b.id="soundToggle";b.className="sound-toggle";b.textContent="🔊 Suara ON";b.onclick=()=>{soundEnabled=!soundEnabled;b.textContent=soundEnabled?"🔊 Suara ON":"🔇 Suara OFF"};document.body.appendChild(b)}document.addEventListener("click",e=>{const b=e.target.closest("button");if(b&&b.id!=="soundToggle")playCustomSound("button")},true);document.addEventListener("click",e=>{const el=e.target.closest("[data-points]");if(el){const p=Number(el.dataset.points);if(Number.isFinite(p))setTimeout(()=>playCustomSound(p),40)}},true);loadQuizSounds();installSoundUI();</script>
+<style>.check-wrap{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:20px}.check-label{font-weight:800;font-size:16px}.meme-check{width:78px;height:78px;padding:0!important;border:3px solid #fff!important;border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 5px 14px rgba(0,0,0,.12);cursor:pointer}.meme-check img{width:100%;height:100%;object-fit:contain;display:block}.meme-check:active{transform:scale(.95)}@media(max-width:600px){.check-label{font-size:14px}.meme-check{width:68px;height:68px}}</style></style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="./firebase-config.js"></script>
 <style>
 .name-modal{position:fixed;inset:0;background:rgba(20,25,38,.45);display:grid;place-items:center;padding:20px;z-index:50}.name-box{width:min(420px,100%);background:#fff;border-radius:24px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.2);text-align:center}.name-box h2{margin:0 0 8px}.name-box p{color:#8d93a0;margin:0 0 18px}.name-box input{width:100%;padding:14px 16px;border:1px solid #dddfe7;border-radius:14px;font-size:16px;outline:none}.name-box button{margin-top:12px;width:100%;justify-content:center}.name-error{color:#d9534f;font-size:13px;min-height:18px;margin-top:8px}.submit-status{font-size:13px;color:#777;margin-top:10px}.name-box.hidden{display:none!important}
 </style>
@@ -370,5 +359,46 @@ document.getElementById("heroSubtitle").textContent=quiz.subtitle;
 loadQuizFromFirebase();
 
 </script>
+
+<!-- Custom sound system -->
+<style>
+.sound-toggle{border:1px solid #e6e7ec;background:#fff;border-radius:18px;padding:10px 14px;font-weight:700;cursor:pointer;color:#202737}.sound-toggle.off{opacity:.55}
+</style>
+<script>
+let soundEnabled = localStorage.getItem('quizSoundEnabled') !== '0';
+const customSounds = {button:'',0:'',1:'',2:'',3:'',4:'',5:''};
+function updateSoundButton(){const b=document.getElementById('soundToggle');if(!b)return;b.textContent=soundEnabled?'🔊 Suara ON':'🔇 Suara OFF';b.classList.toggle('off',!soundEnabled);}
+function toggleSound(){soundEnabled=!soundEnabled;localStorage.setItem('quizSoundEnabled',soundEnabled?'1':'0');updateSoundButton();if(soundEnabled)playCustomSound('button');}
+function playCustomSound(key){if(!soundEnabled)return;const src=customSounds[String(key)];if(!src)return;try{const a=new Audio(src);a.volume=.9;a.play().catch(()=>{});}catch(e){}}
+async function loadCustomSounds(){
+  if(!window.FIREBASE_CONFIG || window.FIREBASE_CONFIG.apiKey==='ISI_API_KEY')return;
+  try{
+    if(!firebase.apps.length) firebase.initializeApp(window.FIREBASE_CONFIG);
+    const db=firebase.firestore();
+    const snap=await db.collection('quizSettings').doc('sounds').get();
+    if(snap.exists){const d=snap.data()||{};Object.keys(customSounds).forEach(k=>{if(typeof d[k]==='string')customSounds[k]=d[k];});}
+  }catch(e){console.warn('Suara custom belum tersedia.',e);}
+}
+function installSoundUI(){
+  const top=document.querySelector('.topbar');
+  if(top && !document.getElementById('soundToggle')){const b=document.createElement('button');b.id='soundToggle';b.className='sound-toggle';b.type='button';b.onclick=toggleSound;top.appendChild(b);}
+  updateSoundButton();
+}
+const _oldStartQuiz=startQuiz;
+startQuiz=function(){playCustomSound('button');return _oldStartQuiz.apply(this,arguments)};
+const _oldSelectOption=selectOption;
+selectOption=function(i){playCustomSound('button');return _oldSelectOption.apply(this,arguments)};
+const _oldCheckAnswer=checkAnswer;
+checkAnswer=function(){
+  if(selected===null)return;
+  const pts=Number(quiz.questions[current].options[selected]?.points)||0;
+  playCustomSound(pts);
+  return _oldCheckAnswer.apply(this,arguments);
+};
+const _oldNextQuestion=nextQuestion;
+nextQuestion=function(){playCustomSound('button');return _oldNextQuestion.apply(this,arguments)};
+window.addEventListener('load',()=>{installSoundUI();loadCustomSounds();});
+</script>
+
 </body>
 </html>
