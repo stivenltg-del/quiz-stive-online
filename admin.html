@@ -266,6 +266,14 @@ th,td{padding:10px;border-bottom:1px solid #eee;text-align:left;white-space:nowr
   </div>
 </div>
 
+
+<style>
+.video-box{margin-top:14px;padding:14px;border:1px solid #e7e8ee;border-radius:16px;background:#fbfbfd}
+.video-box label{display:block;margin:7px 0;font-weight:700}
+.video-box input[type="text"],.video-box input:not([type]),.video-box select{width:100%;padding:11px;border:1px solid #ddd;border-radius:10px;box-sizing:border-box}
+.video-box input[type="checkbox"]{width:auto}
+.video-box .small{font-size:12px;color:#7f8591;line-height:1.45}
+</style>
 <script>
 window.FIREBASE_CONFIG=window.FIREBASE_CONFIG||{
   apiKey:"AIzaSyA_PEESWAuScYrU8Rd9uPS24UKvj5glT5I",
@@ -280,8 +288,9 @@ window.FIREBASE_CONFIG=window.FIREBASE_CONFIG||{
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script>
-let auth=null,db=null,currentData=null,resultsCache=[],pendingSounds={};
+let auth=null,db=null,storage=null,currentData=null,resultsCache=[],pendingSounds={};
 const $=id=>document.getElementById(id);
 const ADMIN_UID="4ATUxzkPlFPxOeCd5ffAsVcVQRf2";
 const SOUND_KEYS=["button","0","1","2","3","4","5"];
@@ -308,7 +317,7 @@ function defaultQuestion(i){
       points:[5,3,2,1,0][j],
       feedback:["NAH INI BARU BENER 💀","lumayan ngerti","hampir kena","kok bisa 😭","BRO SIAPA KAMU"][j],
       explanation:"Keterangan jawaban bisa kamu edit sendiri.",
-      reactionImage:""
+      reactionImage:"", videoEnabled:false, videoType:"url", videoUrl:"", videoStoragePath:""
     }))
   };
 }
@@ -328,10 +337,11 @@ function getMaxScore(data){
 }
 function calcRangeBounds(maxScore){
   const max=Math.max(0,Math.round(maxScore));
+  if(max<=0)return [1,2,3,4,5].map(()=>({min:0,max:0}));
   return [1,2,3,4,5].map(level=>{
     const min=Math.floor(((level-1)*max)/5)+1;
     const end=Math.floor((level*max)/5);
-    return {min: max===0?0:min, max:end};
+    return {min,max:end};
   });
 }
 function renderRangeEditor(data){
@@ -409,6 +419,14 @@ function addOptionCard(parent,o,oi){
     <div class="image-row">
       <div><label>Reaction setelah Cek Jawa</label><input class="r-file" type="file" accept="image/*"><input class="o-reaction" value="${esc(o.reactionImage||"")}" placeholder="Gambar reaction"><div class="small">Tombol upload membuka crop 1:1 (kotak).</div></div>
       <img class="preview r-preview" src="${esc(o.reactionImage||"")}" onerror="this.style.opacity=.3">
+    </div>
+    <div class="video-box">
+      <label><input class="o-video-enabled" type="checkbox" ${o.videoEnabled?'checked':''}> ⭐ Aktifkan video khusus untuk pilihan ini</label>
+      <label>Sumber video</label>
+      <select class="o-video-type"><option value="url" ${o.videoType!=='upload'?'selected':''}>🌐 Dari internet (URL video langsung)</option><option value="upload" ${o.videoType==='upload'?'selected':''}>📱 Dari file HP</option></select>
+      <div class="video-url-wrap"><input class="o-video-url" value="${esc(o.videoUrl||"")}" placeholder="https://contoh.com/video.mp4"></div>
+      <div class="video-upload-wrap hidden"><input class="o-video-file" type="file" accept="video/*"><div class="small">Video dari HP akan disimpan di Firebase Storage, bukan di Firestore. Maksimal 25 MB.</div><div class="video-upload-status small"></div></div>
+      <div class="small">Video hanya diputar jika ⭐ aktif dan pilihan ini dipilih peserta. Suara video tidak dimatikan.</div>
     </div>`;
   const file=op.querySelector(".o-file"),img=op.querySelector(".o-image"),prev=op.querySelector(".preview");
   file.onchange=async()=>{if(file.files[0]){try{const d=await compressImage(file.files[0],700,.70);img.value=d;prev.src=d;prev.style.opacity=1}catch(e){alert("Gagal membaca gambar.")}}};
@@ -416,6 +434,25 @@ function addOptionCard(parent,o,oi){
   const rfile=op.querySelector(".r-file"),rimg=op.querySelector(".o-reaction"),rprev=op.querySelector(".r-preview");
   rfile.onchange=()=>{if(rfile.files[0])openCrop(rfile.files[0],rimg,rprev);rfile.value=""};
   rimg.oninput=()=>{rprev.src=rimg.value;rprev.style.opacity=1};
+  const vEnabled=op.querySelector(".o-video-enabled"),vType=op.querySelector(".o-video-type"),vUrl=op.querySelector(".o-video-url"),vFile=op.querySelector(".o-video-file"),vUrlWrap=op.querySelector(".video-url-wrap"),vUploadWrap=op.querySelector(".video-upload-wrap"),vStatus=op.querySelector(".video-upload-status");
+  const syncVideoType=()=>{const upload=vType.value==='upload';vUrlWrap.classList.toggle('hidden',upload);vUploadWrap.classList.toggle('hidden',!upload);};
+  vType.onchange=syncVideoType; syncVideoType();
+  vFile.onchange=async()=>{
+    const f=vFile.files&&vFile.files[0]; if(!f)return;
+    if(f.size>25*1024*1024){alert('Video terlalu besar. Maksimal 25 MB.');vFile.value='';return;}
+    if(!storage||!auth.currentUser){vStatus.textContent='Login admin belum siap.';return;}
+    try{
+      vStatus.textContent='Mengupload video...';
+      const qIndex=[...document.querySelectorAll('.qcard')].indexOf(box)+1;
+      const optIndex=oi+1;
+      const path=`quiz-videos/${auth.currentUser.uid}/q${qIndex}_o${optIndex}_${Date.now()}_${f.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+      const ref=storage.ref().child(path);
+      await ref.put(f,{contentType:f.type||'video/mp4'});
+      const url=await ref.getDownloadURL();
+      vUrl.value=url; vUrl.dataset.storagePath=path;
+      vStatus.textContent='✅ Video tersimpan. Jangan lupa Simpan Quiz.';
+    }catch(e){vStatus.textContent='❌ Upload gagal: '+e.message;}
+  };
   parent.appendChild(op);
    op.querySelector(".o-points").addEventListener("input",()=>{
      if(currentData){syncEditorIntoData();renderRangeEditor(currentData);}
@@ -434,37 +471,84 @@ async function compressImage(file,maxSide=700,quality=.70){
 
 let cropState=null;
 function openCrop(file,input,preview){
+  if(!file || !file.type.startsWith("image/")){alert("Pilih file gambar.");return;}
   const fr=new FileReader();
-  fr.onload=()=>{const im=$("cropImage");im.src=fr.result;cropState={input,preview,img:im,scale:1,x:0,y:0,baseW:0,baseH:0};im.onload=()=>{cropState.baseW=im.naturalWidth;cropState.baseH=im.naturalHeight;$("cropZoom").value=1;positionCrop();$("cropModal").classList.add("open")}};
+  fr.onerror=()=>alert("Gagal membaca gambar.");
+  fr.onload=()=>{
+    const im=$("cropImage");
+    cropState={input,preview,img:im,scale:1,x:0,y:0,baseW:0,baseH:0};
+    im.onload=()=>{
+      cropState.baseW=im.naturalWidth;
+      cropState.baseH=im.naturalHeight;
+      $("cropZoom").value="1";
+      positionCrop();
+      $("cropModal").classList.add("open");
+    };
+    im.onerror=()=>{cropState=null;alert("Gambar tidak bisa dibuka.")};
+    im.src=fr.result;
+  };
   fr.readAsDataURL(file);
 }
+function getCropMetrics(){
+  if(!cropState)return null;
+  const stage=$("cropStage"),box=$(".crop-square"),im=cropState.img;
+  const sr=stage.getBoundingClientRect(),br=box.getBoundingClientRect(),ir=im.getBoundingClientRect();
+  const sxScale=ir.width/cropState.baseW, syScale=ir.height/cropState.baseH;
+  return {sr,br,ir,sxScale,syScale};
+}
 function positionCrop(){
-  if(!cropState)return;
+  if(!cropState || !cropState.baseW || !cropState.baseH)return;
   const stage=$("cropStage"),box=$(".crop-square"),im=$("cropImage");
-  const rect=box.getBoundingClientRect(),sr=stage.getBoundingClientRect();
-  const side=rect.width,scale=Math.max(side/cropState.baseW,side/cropState.baseH)*cropState.scale;
-  im.style.width=(cropState.baseW*scale)+"px";im.style.height=(cropState.baseH*scale)+"px";
-  im.style.left=(sr.width/2+cropState.x)+"px";im.style.top=(sr.height/2+cropState.y)+"px";
+  const side=box.getBoundingClientRect().width;
+  const sr=stage.getBoundingClientRect();
+  const fit=Math.max(side/cropState.baseW,side/cropState.baseH);
+  const scale=fit*cropState.scale;
+  im.style.width=(cropState.baseW*scale)+"px";
+  im.style.height=(cropState.baseH*scale)+"px";
+  im.style.left=(sr.width/2+cropState.x)+"px";
+  im.style.top=(sr.height/2+cropState.y)+"px";
   im.style.transform="translate(-50%,-50%)";
 }
-$("cropZoom").oninput=()=>{if(cropState){cropState.scale=Number($("cropZoom").value);positionCrop()}};
+$("cropZoom").oninput=()=>{if(cropState){cropState.scale=Number($("cropZoom").value)||1;positionCrop()}};
 let dragging=false,lastX=0,lastY=0;
-$("cropStage").addEventListener("pointerdown",e=>{if(!cropState)return;dragging=true;lastX=e.clientX;lastY=e.clientY;$("cropStage").setPointerCapture(e.pointerId)});
-$("cropStage").addEventListener("pointermove",e=>{if(!dragging||!cropState)return;cropState.x+=e.clientX-lastX;cropState.y+=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;positionCrop()});
-$("cropStage").addEventListener("pointerup",()=>dragging=false);
-$("cropStage").addEventListener("pointercancel",()=>dragging=false);
-$("cropCancel").onclick=()=>{$("cropModal").classList.remove("open");cropState=null};
+$("cropStage").addEventListener("pointerdown",e=>{
+  if(!cropState)return;
+  dragging=true;lastX=e.clientX;lastY=e.clientY;
+  try{$("cropStage").setPointerCapture(e.pointerId)}catch(_){ }
+  e.preventDefault();
+});
+$("cropStage").addEventListener("pointermove",e=>{
+  if(!dragging||!cropState)return;
+  cropState.x+=e.clientX-lastX;cropState.y+=e.clientY-lastY;
+  lastX=e.clientX;lastY=e.clientY;positionCrop();e.preventDefault();
+});
+function stopCropDrag(){dragging=false}
+$("cropStage").addEventListener("pointerup",stopCropDrag);
+$("cropStage").addEventListener("pointercancel",stopCropDrag);
+$("cropCancel").onclick=()=>{$("cropModal").classList.remove("open");cropState=null;dragging=false};
 $("cropApply").onclick=()=>{
   if(!cropState)return;
-  const stage=$("cropStage"),box=$(".crop-square"),im=cropState.img,sr=stage.getBoundingClientRect(),br=box.getBoundingClientRect();
-  const side=br.width,displayW=im.getBoundingClientRect().width,displayH=im.getBoundingClientRect().height;
-  const left=im.getBoundingClientRect().left,top=im.getBoundingClientRect().top;
-  const sx=Math.max(0,Math.min(cropState.baseW-1,(br.left-left)/displayW*cropState.baseW));
-  const sy=Math.max(0,Math.min(cropState.baseH-1,(br.top-top)/displayH*cropState.baseH));
-  const sw=Math.min(cropState.baseW-sx,cropState.baseH-sy,side/displayW*cropState.baseW);
-  const c=document.createElement("canvas");c.width=800;c.height=800;c.getContext("2d").drawImage(im,sx,sy,sw,sw,0,0,800,800);
-  const data=c.toDataURL("image/jpeg",.82);cropState.input.value=data;cropState.preview.src=data;cropState.preview.style.opacity=1;
-  $("cropModal").classList.remove("open");cropState=null;
+  const m=getCropMetrics();
+  if(!m || !cropState.baseW || !cropState.baseH){alert("Crop belum siap. Coba lagi.");return;}
+  const {br,ir,sxScale,syScale}=m;
+  const sidePx=Math.min(br.width/sxScale,br.height/syScale);
+  let sx=(br.left-ir.left)/sxScale;
+  let sy=(br.top-ir.top)/syScale;
+  sx=Math.max(0,Math.min(cropState.baseW-sidePx,sx));
+  sy=Math.max(0,Math.min(cropState.baseH-sidePx,sy));
+  const c=document.createElement("canvas");c.width=600;c.height=600;
+  const ctx=c.getContext("2d");ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
+  ctx.drawImage(cropState.img,sx,sy,sidePx,sidePx,0,0,600,600);
+  let data=c.toDataURL("image/jpeg",.76);
+  // Keep each reaction compact enough for Firestore documents.
+  if(data.length>190000){
+    data=c.toDataURL("image/jpeg",.60);
+  }
+  if(data.length>220000){alert("Gambar hasil crop masih terlalu besar. Pilih gambar yang lebih kecil.");return}
+  cropState.input.value=data;
+  cropState.input.dispatchEvent(new Event("input",{bubbles:true}));
+  cropState.preview.src=data;cropState.preview.style.opacity=1;
+  $("cropModal").classList.remove("open");cropState=null;dragging=false;
 };
 
 function collectData(){
@@ -476,10 +560,18 @@ function collectData(){
       points:safeNum(op.querySelector(".o-points").value,0),
       feedback:op.querySelector(".o-feedback").value.trim(),
       explanation:op.querySelector(".o-explanation").value.trim(),
-      reactionImage:op.querySelector(".o-reaction").value.trim()
+      reactionImage:op.querySelector(".o-reaction").value.trim(),
+      videoEnabled:op.querySelector(".o-video-enabled")?.checked||false,
+      videoType:op.querySelector(".o-video-type")?.value||"url",
+      videoUrl:op.querySelector(".o-video-url")?.value.trim()||"",
+      videoStoragePath:op.querySelector(".o-video-url")?.dataset.storagePath||"",
+      videoEnabled:op.querySelector(".o-video-enabled")?.checked||false,
+      videoType:op.querySelector(".o-video-type")?.value||"url",
+      videoUrl:op.querySelector(".o-video-url")?.value.trim()||"",
+      videoStoragePath:op.querySelector(".o-video-url")?.dataset.storagePath||""
     }))
   }));
-  return {eyebrow:$("eyebrow").value.trim(),title:$("title").value.trim(),subtitle:$("subtitle").value.trim(),display:readDisplayControls(),questions};
+  return {eyebrow:$("eyebrow").value.trim(),title:$("title").value.trim(),subtitle:$("subtitle").value.trim(),display:readDisplayControls(),resultRanges:(currentData&&currentData.resultRanges)||defaultResultRanges(),questions};
 }
 function readDisplayControls(){
   const d=mergeDisplay({});
@@ -521,7 +613,7 @@ async function loadQuiz(){
     const snap=await db.collection("quizQuestions").orderBy("order").get();
     if(!meta.exists||snap.empty){renderEditor(defaultData());msg("Belum ada data quiz. Template awal sudah dibuat di editor.");return}
     const m=meta.data();
-    renderEditor({eyebrow:m.eyebrow||"",title:m.title||"",subtitle:m.subtitle||"",display:mergeDisplay(m.display||{}),questions:snap.docs.map(d=>d.data()).sort((a,b)=>(a.order||0)-(b.order||0))});
+    renderEditor({eyebrow:m.eyebrow||"",title:m.title||"",subtitle:m.subtitle||"",display:mergeDisplay(m.display||{}),resultRanges:(m.resultRanges&&m.resultRanges.length===5)?m.resultRanges:defaultResultRanges(),questions:snap.docs.map(d=>d.data()).sort((a,b)=>(a.order||0)-(b.order||0))});
     msg("✅ Quiz berhasil dimuat.");
   }catch(e){msg("❌ Gagal memuat quiz: "+e.message)}
 }
@@ -533,6 +625,7 @@ function syncEditorIntoData(){
   currentData.eyebrow=$("eyebrow").value;
   currentData.title=$("title").value;
   currentData.subtitle=$("subtitle").value;
+  currentData.resultRanges=currentData.resultRanges&&currentData.resultRanges.length===5?currentData.resultRanges:defaultResultRanges();
   currentData.questions=[...document.querySelectorAll(".qcard")].map((box,qi)=>({
     order:qi+1,
     question:box.querySelector(".q-text").value,
@@ -569,7 +662,7 @@ $("saveQuiz").onclick=async()=>{
   msg("Menyimpan quiz...");
   try{
     const d=collectData();
-    await db.collection("quizSettings").doc("main").set({eyebrow:d.eyebrow,title:d.title,subtitle:d.subtitle,display:d.display,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+    await db.collection("quizSettings").doc("main").set({eyebrow:d.eyebrow,title:d.title,subtitle:d.subtitle,display:d.display,resultRanges:d.resultRanges,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
     const old=await db.collection("quizQuestions").get(),batch=db.batch();
     old.docs.forEach(x=>batch.delete(x.ref));
     d.questions.forEach((q,i)=>batch.set(db.collection("quizQuestions").doc("q"+(i+1)),q));
@@ -634,7 +727,7 @@ $("logoutBtn").onclick=()=>auth.signOut();
 
 try{
   firebase.initializeApp(window.FIREBASE_CONFIG);
-  auth=firebase.auth();db=firebase.firestore();
+  auth=firebase.auth();db=firebase.firestore();storage=firebase.storage();
   auth.onAuthStateChanged(async user=>{
     if(user&&user.uid===ADMIN_UID){
       $("loginView").classList.add("hidden");$("appView").classList.remove("hidden");
