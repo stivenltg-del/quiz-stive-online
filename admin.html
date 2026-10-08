@@ -92,7 +92,17 @@ small{color:#69707e}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="./firebase-config.js"></script>
+<script>
+window.FIREBASE_CONFIG = {
+  apiKey: "AIzaSyA_PEESWAuScYrU8Rd9uPS24UKvj5glT5I",
+  authDomain: "seberapa-kenal-sih.firebaseapp.com",
+  projectId: "seberapa-kenal-sih",
+  storageBucket: "seberapa-kenal-sih.firebasestorage.app",
+  messagingSenderId: "368960033210",
+  appId: "1:368960033210:web:fea06298c84a7df80d4d83",
+  measurementId: "G-0PV2V8TQW6"
+};
+</script>
 <script>
 let auth=null,db=null,cache=[],quizData=null;
 const $=id=>document.getElementById(id);
@@ -264,7 +274,7 @@ $("export").onclick=()=>{
 };
 
 $("loginBtn").onclick=async()=>{
-  if(!auth){setMsg("Isi firebase-config.js dulu.");return}
+  if(!auth){setMsg("Firebase belum siap. Muat ulang halaman.");return}
   try{
     const email=$("email").value.trim();
     const password=$("password").value;
@@ -290,7 +300,7 @@ $("refresh").onclick=loadResults;
 setupTabs();
 
 try{
-  if(window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.apiKey&&window.FIREBASE_CONFIG.apiKey!=="ISI_API_KEY"){
+  if(window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.apiKey&&window.FIREBASE_CONFIG.apiKey){
     firebase.initializeApp(window.FIREBASE_CONFIG);
     auth=firebase.auth();db=firebase.firestore();
     const SOUND_KEYS=["button","0","1","2","3","4","5"];const pendingSounds={};function readAudio(f){return new Promise((r,j)=>{const x=new FileReader();x.onload=()=>r(x.result);x.onerror=j;x.readAsDataURL(f)})}function ss(t){const e=document.getElementById("soundStatus");if(e)e.textContent=t}function sp(k,v){const a=document.getElementById("prev_"+k);if(a){a.src=v||"";a.style.display=v?"block":"none"}}async function loadSounds(){if(!db)return;try{const s=await db.collection("quizSettings").doc("sounds").get(),d=s.exists?s.data():{};SOUND_KEYS.forEach(k=>{if(d[k])sp(k,d[k])});ss(s.exists?"Pengaturan suara berhasil dimuat.":"Belum ada pengaturan suara.")}catch(e){ss("Gagal memuat suara: "+e.message)}}SOUND_KEYS.forEach(k=>{const i=document.getElementById("snd_"+k);if(i)i.onchange=async()=>{const f=i.files&&i.files[0];if(!f)return;if(f.size>500000){ss("File terlalu besar. Maksimal sekitar 500 KB.");i.value="";return}pendingSounds[k]=await readAudio(f);sp(k,pendingSounds[k]);ss("Suara siap disimpan.")}});document.getElementById("saveSounds")?.addEventListener("click",async()=>{if(!db)return;ss("Menyimpan suara...");try{const ref=db.collection("quizSettings").doc("sounds"),s=await ref.get(),d=s.exists?s.data():{};SOUND_KEYS.forEach(k=>{if(k in pendingSounds)d[k]=pendingSounds[k]});d.updatedAt=firebase.firestore.FieldValue.serverTimestamp();await ref.set(d);ss("✅ Pengaturan suara tersimpan.")}catch(e){ss("❌ Gagal menyimpan: "+e.message)}});document.getElementById("clearSounds")?.addEventListener("click",async()=>{if(!db||!confirm("Hapus semua suara custom?"))return;await db.collection("quizSettings").doc("sounds").set({button:"","0":"","1":"","2":"","3":"","4":"","5":""});SOUND_KEYS.forEach(k=>sp(k,""));ss("Suara custom dihapus.")});
