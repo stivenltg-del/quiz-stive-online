@@ -2,513 +2,541 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Admin Quiz Stive</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Admin • Quiz Stive</title>
 <style>
+:root{--bg:#f4f6fb;--card:#fff;--dark:#202737;--muted:#72798a;--line:#e3e6ee;--accent:#f27679}
 *{box-sizing:border-box}
-body{font-family:system-ui,Arial;background:#f4f6fb;color:#202737;margin:0;padding:16px}
-.wrap{max-width:1100px;margin:auto;background:#fff;padding:20px;border-radius:22px;box-shadow:0 10px 35px #18233b12}
-h1,h2{margin-top:0}
-input,textarea,select,button{font:inherit;padding:11px;border-radius:10px;border:1px solid #d8dce5}
-input,textarea,select{width:100%;background:#fff}
-textarea{min-height:70px;resize:vertical}
-button{background:#202737;color:#fff;cursor:pointer}
-button.secondary{background:#fff;color:#202737}
-button.danger{background:#c93b4b}
+html,body{margin:0;background:var(--bg);color:var(--dark);font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif}
+body{padding:14px}
+.wrap{max-width:1150px;margin:auto}
+.top{position:sticky;top:10px;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:20px;padding:12px;box-shadow:0 10px 30px #20273712}
+.toprow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.brand{font-weight:900;font-size:20px}
+.tools{display:flex;gap:7px;overflow:auto;padding-top:10px}
+.tool{white-space:nowrap;background:#fff;color:var(--dark);border:1px solid var(--line);border-radius:12px;padding:9px 11px;font-weight:750;cursor:pointer}
+.tool.active{background:var(--dark);color:#fff}
+main{margin-top:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 8px 25px #20273708}
+h1,h2,h3{margin-top:0}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+label{display:block;font-size:12px;font-weight:800;color:var(--muted);margin:10px 0 6px}
+input,textarea,select,button{font:inherit}
+input,textarea,select{width:100%;border:1px solid var(--line);border-radius:12px;padding:11px;background:#fff;color:var(--dark)}
+textarea{min-height:75px;resize:vertical}
+button{border:0;border-radius:12px;padding:11px 14px;background:var(--dark);color:#fff;font-weight:800;cursor:pointer}
+button.secondary{background:#fff;color:var(--dark);border:1px solid var(--line)}
+button.danger{background:#c83f4d}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.status{padding:11px 13px;border-radius:12px;background:#f4f6fb;color:#555e70;margin-top:10px;min-height:20px}
 .hidden{display:none!important}
-.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
-.tab{background:#fff;color:#202737;border:1px solid #ddd}
-.tab.active{background:#202737;color:#fff}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.card{border:1px solid #e7e8ed;border-radius:18px;padding:16px;margin:14px 0;background:#fff}
-.qhead{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.option{border:1px solid #eee;border-radius:14px;padding:12px;margin:12px 0;background:#fafbfc}
+.login{max-width:520px;margin:10vh auto}
+.option{border:1px solid var(--line);border-radius:16px;padding:14px;margin:12px 0;background:#fafbfc}
+.qhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.preview{width:90px;height:90px;object-fit:cover;border-radius:12px;border:1px solid var(--line);background:#f1f2f5}
 .image-row{display:grid;grid-template-columns:1fr 100px;gap:10px;align-items:end}
-.preview{width:100px;height:100px;border-radius:10px;object-fit:cover;border:1px solid #ddd;background:#f1f2f5}
-.actions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
-.status{padding:10px;border-radius:10px;background:#f4f6fb;margin:10px 0}
-table{width:100%;border-collapse:collapse;margin-top:12px}
-th,td{text-align:left;padding:10px;border-bottom:1px solid #eee;white-space:nowrap}
-.scroll{overflow:auto}
-small{color:#69707e}
-@media(max-width:700px){.grid{grid-template-columns:1fr}.image-row{grid-template-columns:1fr 80px}.preview{width:80px;height:80px}}
-.sound-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.sound-card{border:1px solid #e5e7eb;border-radius:14px;padding:13px;background:#fafbfc}.sound-preview{width:100%;margin-top:8px}@media(max-width:700px){.sound-grid{grid-template-columns:1fr}}</style>
-
-<style>
-/* 1:1 image cropper */
-.crop-modal{position:fixed;inset:0;background:rgba(10,14,24,.72);display:none;align-items:center;justify-content:center;z-index:9999;padding:16px}
-.crop-modal.show{display:flex}
-.crop-box{width:min(680px,100%);background:#fff;border-radius:22px;padding:18px;box-shadow:0 20px 70px rgba(0,0,0,.28)}
-.crop-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
-.crop-stage{width:min(560px,90vw);height:min(560px,70vh);margin:auto;background:#111;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:16px;touch-action:none;position:relative}
-.crop-image{max-width:none;max-height:none;position:absolute;user-select:none;touch-action:none;cursor:grab}
-.crop-image.dragging{cursor:grabbing}
-.crop-square{position:absolute;width:min(88%,88%);aspect-ratio:1/1;border:3px solid #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.42);pointer-events:none;border-radius:4px}
-.crop-controls{display:flex;gap:8px;align-items:center;margin-top:12px}
-.crop-controls input{flex:1}
-.crop-help{font-size:12px;color:#69707e;margin:8px 0 0}
-@media(max-width:600px){.crop-box{padding:12px}.crop-stage{height:62vh}.crop-controls button{padding:9px}}
+.small{font-size:12px;color:var(--muted)}
+.sound-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.sound-card{border:1px solid var(--line);border-radius:16px;padding:13px;background:#fafbfc}
+audio{width:100%;margin-top:8px}
+.style-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.preview-shell{background:#f6f7fb;border:1px solid var(--line);border-radius:18px;padding:16px}
+.live-home{background:#fff;border-radius:20px;padding:34px 26px;min-height:280px;position:relative;overflow:hidden}
+.live-home:before{content:"";position:absolute;width:55%;height:170px;right:-12%;top:-70px;background:#fff0f0;border-radius:0 0 0 100%}
+.live-content{position:relative;z-index:1}
+.live-eyebrow{color:var(--accent);font-weight:900;letter-spacing:3px;margin:20px 0}
+.live-title{font-size:28px;line-height:1.3;margin:0 0 18px}
+.live-subtitle{color:#a1a6b2;font-size:18px;margin:0 0 20px}
+.live-question{font-size:25px;font-weight:800;line-height:1.3;margin:20px 0}
+.crop-modal{position:fixed;inset:0;background:#111a;display:none;place-items:center;padding:16px;z-index:100}
+.crop-modal.open{display:grid}
+.crop-box{width:min(520px,100%);background:#fff;border-radius:20px;padding:16px}
+.crop-stage{height:min(70vh,480px);background:#17191f;border-radius:16px;overflow:hidden;position:relative;display:grid;place-items:center}
+.crop-square{position:absolute;width:min(82%,360px);aspect-ratio:1;border:3px solid #fff;border-radius:8px;box-shadow:0 0 0 9999px #0007;z-index:3;pointer-events:none}
+.crop-image{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:none;user-select:none;touch-action:none}
+.crop-controls{display:grid;grid-template-columns:1fr 100px;gap:10px;align-items:center;margin-top:12px}
+.table-wrap{overflow:auto}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px;border-bottom:1px solid #eee;text-align:left;white-space:nowrap}
+.back{margin-bottom:10px}
+@media(max-width:700px){
+ body{padding:9px}.grid,.sound-grid{grid-template-columns:1fr}.style-row,.grid3{grid-template-columns:1fr 1fr}.top{top:5px}.tool{font-size:13px;padding:8px 9px}.live-title{font-size:23px}.image-row{grid-template-columns:1fr 85px}.preview{width:85px;height:85px}
+}
 </style>
 </head>
 <body>
-<main class="wrap">
-<h1>👑 Admin Quiz Stive</h1>
-<p><small>Admin bisa mengedit isi quiz dan melihat hasil peserta. Peserta tetap memakai <b>index.html</b>.</small></p>
+<div class="wrap">
 
-<section id="login">
-  <div class="grid">
-    <div><label>Email admin</label><input id="email" type="email" placeholder="Email admin"></div>
-    <div><label>Password</label><input id="password" type="password" placeholder="Password"></div>
-  </div>
-  <div class="actions"><button id="loginBtn">Login</button></div>
-  <div id="msg" class="status"></div>
+<section id="loginView" class="card login">
+  <h1>👑 Admin Quiz Stive</h1>
+  <p class="small">Login memakai Firebase Email/Password. Peserta tidak perlu login.</p>
+  <label>Email admin</label>
+  <input id="email" type="email" autocomplete="username" placeholder="Email admin">
+  <label>Password</label>
+  <input id="password" type="password" autocomplete="current-password" placeholder="Password">
+  <div class="actions"><button id="loginBtn">🔐 Login Admin</button></div>
+  <div id="loginMsg" class="status"></div>
 </section>
 
-<section id="panel" class="hidden">
-  <div id="who" class="status"></div>
-  <div class="tabs">
-    <button class="tab active" data-tab="editor">✏️ Edit Quiz</button>
-    <button class="tab" data-tab="results">📊 Hasil</button>
-    <button id="logout" class="tab">Logout</button>
-  </div>
+<section id="appView" class="hidden">
+  <header class="top">
+    <div class="toprow">
+      <div class="brand">🛠️ Admin Quiz Stive</div>
+      <button class="secondary" id="logoutBtn">Keluar</button>
+    </div>
+    <div class="tools">
+      <button class="tool active" data-view="editor">✏️ Quiz</button>
+      <button class="tool" data-view="appearance">🎨 Tampilan</button>
+      <button class="tool" data-view="sounds">🔊 Suara</button>
+      <button class="tool" data-view="results">📊 Hasil</button>
+    </div>
+  </header>
 
-  <section id="editorTab">
-    <div class="card">
-      <h2>Identitas Quiz</h2>
-      <div class="grid">
-        <div><label>Teks kecil atas</label><input id="eyebrow"></div>
-        <div><label>Judul</label><input id="title"></div>
+  <main>
+    <div id="globalStatus" class="status"></div>
+
+    <section id="view-editor">
+      <div class="card">
+        <h2>📝 Isi Quiz</h2>
+        <div class="grid">
+          <div><label>Teks kecil paling atas</label><input id="eyebrow"></div>
+          <div><label>Judul</label><input id="title"></div>
+        </div>
+        <label>Subjudul</label><textarea id="subtitle"></textarea>
+        <div class="actions">
+          <button id="saveQuiz">💾 Simpan Quiz</button>
+          <button class="secondary" id="reloadQuiz">↻ Muat Ulang</button>
+          <button class="secondary" id="addQuestion">＋ Tambah Soal</button>
+        </div>
       </div>
-      <label>Subjudul</label><textarea id="subtitle"></textarea>
-    </div>
-    <div id="questions"></div>
-    <div class="actions">
-      <button id="saveQuiz">💾 Simpan Quiz</button>
-      <button id="reloadQuiz" class="secondary">↻ Muat ulang</button>
-    </div>
-    <div id="saveStatus" class="status"></div>
-  </section>
+      <div id="questions"></div>
+    </section>
 
-  <section class="card" id="soundSettingsCard"><h2>🔊 Pengaturan Suara</h2><p><small>Upload suara sendiri dari HP. Klip maksimal sekitar 700 KB per suara. Suara disimpan terpisah agar tidak memenuhi batas dokumen Firestore.</small></p><div class="sound-grid"><div class="sound-card"><h3>Suara tombol</h3><input id="snd_button" type="file" accept="audio/*"><audio id="prev_button" class="sound-preview" controls></audio></div><div class="sound-card"><h3>0 poin</h3><input id="snd_0" type="file" accept="audio/*"><audio id="prev_0" class="sound-preview" controls></audio></div><div class="sound-card"><h3>1 poin</h3><input id="snd_1" type="file" accept="audio/*"><audio id="prev_1" class="sound-preview" controls></audio></div><div class="sound-card"><h3>2 poin</h3><input id="snd_2" type="file" accept="audio/*"><audio id="prev_2" class="sound-preview" controls></audio></div><div class="sound-card"><h3>3 poin</h3><input id="snd_3" type="file" accept="audio/*"><audio id="prev_3" class="sound-preview" controls></audio></div><div class="sound-card"><h3>4 poin</h3><input id="snd_4" type="file" accept="audio/*"><audio id="prev_4" class="sound-preview" controls></audio></div><div class="sound-card"><h3>5 poin</h3><input id="snd_5" type="file" accept="audio/*"><audio id="prev_5" class="sound-preview" controls></audio></div></div><div class="actions"><button id="saveSounds" type="button">💾 Simpan Pengaturan Suara</button><button id="clearSounds" type="button" class="secondary">Hapus Semua Suara</button></div><div id="soundStatus" class="status">Belum ada perubahan suara.</div></section>
-<section id="resultsTab" class="hidden">
-    <div class="actions">
-      <button id="refresh">Muat ulang hasil</button>
-      <button id="export">Ekspor CSV</button>
-    </div>
-    <div class="scroll">
-      <table>
-        <thead><tr><th>Nama</th><th>Skor</th><th>Jumlah soal</th><th>Durasi</th><th>Waktu kirim</th></tr></thead>
-        <tbody id="rows"></tbody>
-      </table>
-    </div>
-  </section>
+    <section id="view-appearance" class="hidden">
+      <button class="secondary back" data-view="editor">← Kembali ke Edit Quiz</button>
+      <div class="card">
+        <h2>🎨 Atur Bentuk & Posisi Teks</h2>
+        <p class="small">Pengaturan ini ikut tersimpan dan dipakai di halaman peserta. Di bawahnya ada preview supaya kamu bisa lihat kira-kira hasil akhirnya.</p>
+
+        <h3>Eyebrow / teks kecil atas</h3>
+        <div class="style-row">
+          <div><label>Posisi</label><select data-style="eyebrow.align"><option>left</option><option>center</option><option>right</option></select></div>
+          <div><label>Ukuran (px)</label><input type="number" min="8" max="80" data-style="eyebrow.size"></div>
+          <div><label>Ketebalan</label><select data-style="eyebrow.weight"><option value="400">Normal</option><option value="600">Semi</option><option value="800">Tebal</option><option value="900">Sangat tebal</option></select></div>
+          <div><label>Warna</label><input type="color" data-style="eyebrow.color"></div>
+          <div><label>Jarak huruf</label><input type="number" min="0" max="20" data-style="eyebrow.letter"></div>
+          <div><label>Margin atas</label><input type="number" min="0" max="500" data-style="eyebrow.marginTop"></div>
+          <div><label>Margin bawah</label><input type="number" min="0" max="100" data-style="eyebrow.marginBottom"></div>
+          <div><label>Lebar maksimum</label><input type="number" min="100" max="900" data-style="eyebrow.maxWidth"></div>
+        </div>
+
+        <h3>Judul</h3>
+        <div class="style-row">
+          <div><label>Posisi</label><select data-style="title.align"><option>left</option><option>center</option><option>right</option></select></div>
+          <div><label>Ukuran (px)</label><input type="number" min="10" max="80" data-style="title.size"></div>
+          <div><label>Ketebalan</label><select data-style="title.weight"><option value="400">Normal</option><option value="600">Semi</option><option value="800">Tebal</option><option value="900">Sangat tebal</option></select></div>
+          <div><label>Warna</label><input type="color" data-style="title.color"></div>
+          <div><label>Jarak huruf</label><input type="number" min="0" max="20" data-style="title.letter"></div>
+          <div><label>Margin atas</label><input type="number" min="0" max="500" data-style="title.marginTop"></div>
+          <div><label>Margin bawah</label><input type="number" min="0" max="100" data-style="title.marginBottom"></div>
+          <div><label>Lebar maksimum</label><input type="number" min="100" max="900" data-style="title.maxWidth"></div>
+        </div>
+
+        <h3>Subjudul</h3>
+        <div class="style-row">
+          <div><label>Posisi</label><select data-style="subtitle.align"><option>left</option><option>center</option><option>right</option></select></div>
+          <div><label>Ukuran (px)</label><input type="number" min="10" max="60" data-style="subtitle.size"></div>
+          <div><label>Ketebalan</label><select data-style="subtitle.weight"><option value="400">Normal</option><option value="600">Semi</option><option value="800">Tebal</option></select></div>
+          <div><label>Warna</label><input type="color" data-style="subtitle.color"></div>
+          <div><label>Jarak huruf</label><input type="number" min="0" max="20" data-style="subtitle.letter"></div>
+          <div><label>Margin atas</label><input type="number" min="0" max="100" data-style="subtitle.marginTop"></div>
+          <div><label>Margin bawah</label><input type="number" min="0" max="100" data-style="subtitle.marginBottom"></div>
+          <div><label>Lebar maksimum</label><input type="number" min="100" max="900" data-style="subtitle.maxWidth"></div>
+        </div>
+
+        <h3>Pertanyaan</h3>
+        <div class="style-row">
+          <div><label>Posisi</label><select data-style="question.align"><option>left</option><option>center</option><option>right</option></select></div>
+          <div><label>Ukuran (px)</label><input type="number" min="12" max="70" data-style="question.size"></div>
+          <div><label>Ketebalan</label><select data-style="question.weight"><option value="400">Normal</option><option value="600">Semi</option><option value="800">Tebal</option><option value="900">Sangat tebal</option></select></div>
+          <div><label>Warna</label><input type="color" data-style="question.color"></div>
+          <div><label>Jarak huruf</label><input type="number" min="0" max="20" data-style="question.letter"></div>
+          <div><label>Margin atas</label><input type="number" min="0" max="100" data-style="question.marginTop"></div>
+          <div><label>Margin bawah</label><input type="number" min="0" max="100" data-style="question.marginBottom"></div>
+          <div><label>Lebar maksimum</label><input type="number" min="100" max="900" data-style="question.maxWidth"></div>
+        </div>
+
+        <div class="actions">
+          <button id="saveAppearance">💾 Simpan Tampilan</button>
+          <button class="secondary" id="resetAppearance">↺ Kembalikan Default</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>👀 Preview seperti halaman peserta</h2>
+        <div class="preview-shell">
+          <div class="live-home">
+            <div class="live-content">
+              <div class="live-eyebrow" id="liveEyebrow">QUIZ PERSONAL GW</div>
+              <div class="live-title" id="liveTitle">SEBERAPA KENAL KAMU SAMA STIVEN?</div>
+              <div class="live-subtitle" id="liveSubtitle">[EDIT SUBJUDUL QUIZ]</div>
+              <hr>
+              <div class="small">Contoh halaman soal:</div>
+              <div class="live-question" id="liveQuestion">Pertanyaan contoh: Seberapa kenal kamu sama Stiven?</div>
+              <button type="button">JOM →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-sounds" class="hidden">
+      <button class="secondary back" data-view="editor">← Kembali ke Edit Quiz</button>
+      <div class="card">
+        <h2>🔊 Pengaturan Suara</h2>
+        <p class="small">Setiap suara disimpan terpisah agar tidak membebani satu dokumen Firestore. Maksimal 600 KB per file.</p>
+        <div class="sound-grid" id="soundGrid"></div>
+        <div class="actions">
+          <button id="saveSounds">💾 Simpan Semua Suara</button>
+          <button class="secondary" id="clearSounds">Hapus Semua Suara</button>
+        </div>
+        <div id="soundStatus" class="status"></div>
+      </div>
+    </section>
+
+    <section id="view-results" class="hidden">
+      <div class="actions">
+        <button class="secondary" data-view="editor">← Kembali ke Edit Quiz</button>
+        <button id="refreshResults">↻ Muat Hasil</button>
+        <button id="exportResults">⬇️ Ekspor CSV</button>
+      </div>
+      <div class="card">
+        <h2>📊 Hasil Peserta</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Nama</th><th>Skor</th><th>Maks.</th><th>Soal</th><th>Durasi</th><th>Waktu</th></tr></thead>
+            <tbody id="resultRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
 </section>
-</main>
+</div>
 
+<div id="cropModal" class="crop-modal">
+  <div class="crop-box">
+    <h2>✂️ Potong Reaction 1:1</h2>
+    <div class="crop-stage" id="cropStage">
+      <img id="cropImage" class="crop-image" alt="">
+      <div class="crop-square"></div>
+    </div>
+    <div class="crop-controls">
+      <label style="margin:0">Zoom<input id="cropZoom" type="range" min="0.5" max="3.5" step="0.01" value="1"></label>
+      <button id="cropApply">Gunakan Crop</button>
+    </div>
+    <div class="actions"><button class="secondary" id="cropCancel">Batal</button></div>
+  </div>
+</div>
+
+<script>
+window.FIREBASE_CONFIG=window.FIREBASE_CONFIG||{
+  apiKey:"AIzaSyA_PEESWAuScYrU8Rd9uPS24UKvj5glT5I",
+  authDomain:"seberapa-kenal-sih.firebaseapp.com",
+  projectId:"seberapa-kenal-sih",
+  storageBucket:"seberapa-kenal-sih.firebasestorage.app",
+  messagingSenderId:"368960033210",
+  appId:"1:368960033210:web:fea06298c84a7df80d4d83",
+  measurementId:"G-0PV2V8TQW6"
+};
+</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
-window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyA_PEESWAuScYrU8Rd9uPS24UKvj5glT5I",
-  authDomain: "seberapa-kenal-sih.firebaseapp.com",
-  projectId: "seberapa-kenal-sih",
-  storageBucket: "seberapa-kenal-sih.firebasestorage.app",
-  messagingSenderId: "368960033210",
-  appId: "1:368960033210:web:fea06298c84a7df80d4d83",
-  measurementId: "G-0PV2V8TQW6"
-};
-</script>
-<script>
-let auth=null,db=null,cache=[],quizData=null;
+let auth=null,db=null,currentData=null,resultsCache=[],pendingSounds={};
 const $=id=>document.getElementById(id);
-function setMsg(t){$("msg").textContent=t||""}
-function setSave(t){$("saveStatus").textContent=t||""}
+const ADMIN_UID="4ATUxzkPlFPxOeCd5ffAsVcVQRf2";
+const SOUND_KEYS=["button","0","1","2","3","4","5"];
+const SOUND_LABELS={button:"Suara tombol",0:"Suara 0 poin",1:"Suara 1 poin",2:"Suara 2 poin",3:"Suara 3 poin",4:"Suara 4 poin",5:"Suara 5 poin"};
 
-function defaultData(){
-  return {
-    eyebrow:"QUIZ PERSONAL GW",
-    title:"SEBERAPA KENAL KAMU SAMA STIVEN?",
-    subtitle:"[EDIT SUBJUDUL QUIZ]",
-    questions:Array.from({length:10},(_,qi)=>({
-      question:`Pertanyaan ${qi+1}: Seberapa kenal kamu sama Stiven?`,
-      options:["Jawaban A","Jawaban B","Jawaban C","Jawaban D","Jawaban E"].map((text,i)=>({
-        text,image:`https://placehold.co/600x400/F2F3F7/202737?text=Pilihan+${String.fromCharCode(65+i)}`,
-        points:[5,3,2,1,0][i],
-        feedback:["NAH INI BARU BENER 💀","lumayan ngerti","hampir kena","kok bisa 😭","BRO SIAPA KAMU"][i],
-        explanation:"Keterangan jawaban bisa kamu edit sendiri.",
-        reactionImage:`https://placehold.co/800x450/FFF0F0/F27679?text=Reaction+${String.fromCharCode(65+i)}`
-      }))
+function msg(t){$("globalStatus").textContent=t||""}
+function loginMsg(t){$("loginMsg").textContent=t||""}
+function soundMsg(t){$("soundStatus").textContent=t||""}
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function safeNum(v,d){const n=Number(v);return Number.isFinite(n)?n:d}
+
+const DEFAULT_DISPLAY={
+  eyebrow:{align:"left",size:22,weight:"800",color:"#f27679",letter:3,marginTop:255,marginBottom:32,maxWidth:680},
+  title:{align:"left",size:24,weight:"500",color:"#202737",letter:0,marginTop:0,marginBottom:38,maxWidth:680},
+  subtitle:{align:"left",size:23,weight:"400",color:"#a9adb8",letter:0,marginTop:0,marginBottom:42,maxWidth:680},
+  question:{align:"left",size:29,weight:"400",color:"#202737",letter:0,marginTop:0,marginBottom:30,maxWidth:680}
+};
+
+function defaultQuestion(i){
+  return {order:i+1,question:"Pertanyaan "+(i+1)+": Seberapa kenal kamu sama Stiven?",
+    options:["A","B","C","D","E"].map((x,j)=>({
+      text:"Jawaban "+x,
+      image:"",
+      points:[5,3,2,1,0][j],
+      feedback:["NAH INI BARU BENER 💀","lumayan ngerti","hampir kena","kok bisa 😭","BRO SIAPA KAMU"][j],
+      explanation:"Keterangan jawaban bisa kamu edit sendiri.",
+      reactionImage:""
     }))
   };
 }
+function defaultData(){
+  return {eyebrow:"QUIZ PERSONAL GW",title:"SEBERAPA KENAL KAMU SAMA STIVEN?",subtitle:"[EDIT SUBJUDUL QUIZ]",
+    display:JSON.parse(JSON.stringify(DEFAULT_DISPLAY)),questions:Array.from({length:10},(_,i)=>defaultQuestion(i))};
+}
+function mergeDisplay(d){
+  const out=JSON.parse(JSON.stringify(DEFAULT_DISPLAY));
+  for(const k of Object.keys(out)) Object.assign(out[k],(d&&d[k])||{});
+  return out;
+}
 
-function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function switchView(view){
+  document.querySelectorAll(".tool[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
+  ["editor","appearance","sounds","results"].forEach(v=>$("view-"+v).classList.toggle("hidden",v!==view));
+  if(view==="results")loadResults();
+}
+document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>switchView(b.dataset.view)));
+
 function renderEditor(data){
-  quizData=data;
+  currentData=data;
   $("eyebrow").value=data.eyebrow||"";
   $("title").value=data.title||"";
   $("subtitle").value=data.subtitle||"";
-  $("questions").innerHTML="";
-  data.questions.forEach((q,qi)=>{
-    const box=document.createElement("div");
-    box.className="card";
-    box.innerHTML=`<div class="qhead"><h2>Soal ${qi+1}</h2><small>Urutan ${qi+1}</small></div>
-      <label>Pertanyaan</label><textarea class="q-text">${esc(q.question)}</textarea>
-      <div class="options"></div>`;
-    const opts=box.querySelector(".options");
-    (q.options||[]).forEach((o,oi)=>{
-      const op=document.createElement("div");
-      op.className="option";
-      op.innerHTML=`<b>Pilihan ${String.fromCharCode(65+oi)}</b>
-        <label>Teks pilihan</label><input class="o-text" value="${esc(o.text)}">
-        <div class="image-row">
-          <div>
-            <label>Gambar pilihan</label>
-            <input class="o-file" type="file" accept="image/*">
-            <input class="o-image" value="${esc(o.image||"")}" placeholder="URL gambar (opsional)">
-            <small>Pilih file dari galeri atau gunakan URL.</small>
-          </div>
-          <img class="preview" src="${esc(o.image||"")}" onerror="this.style.opacity=.35">
-        </div>
-        <div class="grid">
-          <div><label>Poin</label><input class="o-points" type="number" value="${Number(o.points)||0}"></div>
-          <div><label>Feedback</label><input class="o-feedback" value="${esc(o.feedback||"")}"></div>
-        </div>
-        <label>Keterangan / penjelasan</label><textarea class="o-explanation">${esc(o.explanation||"")}</textarea>
-        <div class="image-row">
-          <div>
-            <label>Gambar reaction setelah memilih (WAJIB 1:1)</label>
-            <input class="r-file" type="file" accept="image/*">
-            <input class="o-reaction" value="${esc(o.reactionImage||"")}" placeholder="URL reaction (opsional)">
-            <small>Upload → potong → hasil otomatis 1:1. Gambar ini muncul setelah peserta menekan Cek Jawa.</small>
-          </div>
-          <img class="preview r-preview" src="${esc(o.reactionImage||"")}" onerror="this.style.opacity=.35">
-        </div>`;
-      const file=op.querySelector(".o-file"), img=op.querySelector(".o-image"), prev=op.querySelector(".preview");
-      const rfile=op.querySelector(".r-file"), rimg=op.querySelector(".o-reaction"), rprev=op.querySelector(".r-preview");
-      file.onchange=async()=>{if(file.files[0]){const data=await compressImage(file.files[0]);img.value=data;prev.src=data;prev.style.opacity=1;}};
-      rfile.onchange=()=>{if(rfile.files[0]){window.openReactionCrop(rfile.files[0],rimg,rprev);rfile.value="";}};
-      img.oninput=()=>{prev.src=img.value;prev.style.opacity=1};
-      rimg.oninput=()=>{rprev.src=rimg.value;rprev.style.opacity=1};
-      opts.appendChild(op);
-    });
-    $("questions").appendChild(box);
-  });
+  const holder=$("questions");holder.innerHTML="";
+  (data.questions||[]).forEach((q,qi)=>addQuestionCard(q,qi,false));
+  if(!(data.questions||[]).length)addQuestionCard(defaultQuestion(0),0,false);
+  renderAppearanceControls(data.display||DEFAULT_DISPLAY);
+  renderLivePreview();
 }
 
-async function compressImage(file,maxSide=700,quality=.72){
+function addQuestionCard(q,qi,focus=true){
+  const box=document.createElement("div");box.className="card qcard";
+  box.innerHTML=`<div class="qhead"><h2>Soal ${qi+1}</h2><button type="button" class="danger remove-q">Hapus Soal</button></div>
+    <label>Pertanyaan</label><textarea class="q-text">${esc(q.question||"")}</textarea>
+    <div class="options"></div>`;
+  const opts=box.querySelector(".options");
+  (q.options||[]).forEach((o,oi)=>addOptionCard(opts,o,oi));
+  box.querySelector(".remove-q").onclick=()=>{if(document.querySelectorAll(".qcard").length<=1){alert("Minimal harus ada 1 soal.");return}box.remove();renumberQuestions()};
+  $("questions").appendChild(box);
+  if(focus)box.scrollIntoView({behavior:"smooth",block:"start"});
+}
+function addOptionCard(parent,o,oi){
+  const op=document.createElement("div");op.className="option";
+  op.innerHTML=`<b>Pilihan ${String.fromCharCode(65+oi)}</b>
+    <label>Teks pilihan</label><input class="o-text" value="${esc(o.text||"")}">
+    <div class="image-row">
+      <div><label>Gambar pilihan</label><input class="o-file" type="file" accept="image/*"><input class="o-image" value="${esc(o.image||"")}" placeholder="URL gambar atau hasil upload"><div class="small">Upload dari galeri atau tempel URL.</div></div>
+      <img class="preview" src="${esc(o.image||"")}" onerror="this.style.opacity=.3">
+    </div>
+    <div class="grid3">
+      <div><label>Poin</label><input class="o-points" type="number" value="${safeNum(o.points,0)}"></div>
+      <div><label>Feedback</label><input class="o-feedback" value="${esc(o.feedback||"")}"></div>
+      <div><label>Penjelasan</label><textarea class="o-explanation">${esc(o.explanation||"")}</textarea></div>
+    </div>
+    <div class="image-row">
+      <div><label>Reaction setelah Cek Jawa</label><input class="r-file" type="file" accept="image/*"><input class="o-reaction" value="${esc(o.reactionImage||"")}" placeholder="Gambar reaction"><div class="small">Tombol upload membuka crop 1:1 (kotak).</div></div>
+      <img class="preview r-preview" src="${esc(o.reactionImage||"")}" onerror="this.style.opacity=.3">
+    </div>`;
+  const file=op.querySelector(".o-file"),img=op.querySelector(".o-image"),prev=op.querySelector(".preview");
+  file.onchange=async()=>{if(file.files[0]){try{const d=await compressImage(file.files[0],700,.70);img.value=d;prev.src=d;prev.style.opacity=1}catch(e){alert("Gagal membaca gambar.")}}};
+  img.oninput=()=>{prev.src=img.value;prev.style.opacity=1};
+  const rfile=op.querySelector(".r-file"),rimg=op.querySelector(".o-reaction"),rprev=op.querySelector(".r-preview");
+  rfile.onchange=()=>{if(rfile.files[0])openCrop(rfile.files[0],rimg,rprev);rfile.value=""};
+  rimg.oninput=()=>{rprev.src=rimg.value;rprev.style.opacity=1};
+  parent.appendChild(op);
+}
+function renumberQuestions(){document.querySelectorAll(".qcard").forEach((q,i)=>q.querySelector("h2").textContent="Soal "+(i+1))}
+$("addQuestion").onclick=()=>addQuestionCard(defaultQuestion(document.querySelectorAll(".qcard").length),document.querySelectorAll(".qcard").length,true);
+
+async function compressImage(file,maxSide=700,quality=.70){
   return new Promise((resolve,reject)=>{
     const fr=new FileReader();
-    fr.onload=()=>{
-      const im=new Image();
-      im.onload=()=>{
-        let w=im.width,h=im.height,scale=Math.min(1,maxSide/Math.max(w,h));
-        w=Math.max(1,Math.round(w*scale));h=Math.max(1,Math.round(h*scale));
-        const c=document.createElement("canvas");c.width=w;c.height=h;
-        c.getContext("2d").drawImage(im,0,0,w,h);
-        resolve(c.toDataURL("image/jpeg",quality));
-      };
-      im.onerror=reject;im.src=fr.result;
-    };
+    fr.onload=()=>{const im=new Image();im.onload=()=>{let w=im.width,h=im.height,s=Math.min(1,maxSide/Math.max(w,h));w=Math.max(1,Math.round(w*s));h=Math.max(1,Math.round(h*s));const c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(im,0,0,w,h);resolve(c.toDataURL("image/jpeg",quality))};im.onerror=reject;im.src=fr.result};
     fr.onerror=reject;fr.readAsDataURL(file);
   });
 }
 
-function collectEditor(){
-  const questions=[...document.querySelectorAll("#questions>.card")].map((box,qi)=>({
-    order:qi+1,
-    question:box.querySelector(".q-text").value.trim(),
+let cropState=null;
+function openCrop(file,input,preview){
+  const fr=new FileReader();
+  fr.onload=()=>{const im=$("cropImage");im.src=fr.result;cropState={input,preview,img:im,scale:1,x:0,y:0,baseW:0,baseH:0};im.onload=()=>{cropState.baseW=im.naturalWidth;cropState.baseH=im.naturalHeight;$("cropZoom").value=1;positionCrop();$("cropModal").classList.add("open")}};
+  fr.readAsDataURL(file);
+}
+function positionCrop(){
+  if(!cropState)return;
+  const stage=$("cropStage"),box=$(".crop-square"),im=$("cropImage");
+  const rect=box.getBoundingClientRect(),sr=stage.getBoundingClientRect();
+  const side=rect.width,scale=Math.max(side/cropState.baseW,side/cropState.baseH)*cropState.scale;
+  im.style.width=(cropState.baseW*scale)+"px";im.style.height=(cropState.baseH*scale)+"px";
+  im.style.left=(sr.width/2+cropState.x)+"px";im.style.top=(sr.height/2+cropState.y)+"px";
+  im.style.transform="translate(-50%,-50%)";
+}
+$("cropZoom").oninput=()=>{if(cropState){cropState.scale=Number($("cropZoom").value);positionCrop()}};
+let dragging=false,lastX=0,lastY=0;
+$("cropStage").addEventListener("pointerdown",e=>{if(!cropState)return;dragging=true;lastX=e.clientX;lastY=e.clientY;$("cropStage").setPointerCapture(e.pointerId)});
+$("cropStage").addEventListener("pointermove",e=>{if(!dragging||!cropState)return;cropState.x+=e.clientX-lastX;cropState.y+=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;positionCrop()});
+$("cropStage").addEventListener("pointerup",()=>dragging=false);
+$("cropStage").addEventListener("pointercancel",()=>dragging=false);
+$("cropCancel").onclick=()=>{$("cropModal").classList.remove("open");cropState=null};
+$("cropApply").onclick=()=>{
+  if(!cropState)return;
+  const stage=$("cropStage"),box=$(".crop-square"),im=cropState.img,sr=stage.getBoundingClientRect(),br=box.getBoundingClientRect();
+  const side=br.width,displayW=im.getBoundingClientRect().width,displayH=im.getBoundingClientRect().height;
+  const left=im.getBoundingClientRect().left,top=im.getBoundingClientRect().top;
+  const sx=Math.max(0,Math.min(cropState.baseW-1,(br.left-left)/displayW*cropState.baseW));
+  const sy=Math.max(0,Math.min(cropState.baseH-1,(br.top-top)/displayH*cropState.baseH));
+  const sw=Math.min(cropState.baseW-sx,cropState.baseH-sy,side/displayW*cropState.baseW);
+  const c=document.createElement("canvas");c.width=800;c.height=800;c.getContext("2d").drawImage(im,sx,sy,sw,sw,0,0,800,800);
+  const data=c.toDataURL("image/jpeg",.82);cropState.input.value=data;cropState.preview.src=data;cropState.preview.style.opacity=1;
+  $("cropModal").classList.remove("open");cropState=null;
+};
+
+function collectData(){
+  const questions=[...document.querySelectorAll(".qcard")].map((box,qi)=>({
+    order:qi+1,question:box.querySelector(".q-text").value.trim(),
     options:[...box.querySelectorAll(".option")].map(op=>({
       text:op.querySelector(".o-text").value.trim(),
       image:op.querySelector(".o-image").value.trim(),
-      points:Number(op.querySelector(".o-points").value)||0,
+      points:safeNum(op.querySelector(".o-points").value,0),
       feedback:op.querySelector(".o-feedback").value.trim(),
       explanation:op.querySelector(".o-explanation").value.trim(),
       reactionImage:op.querySelector(".o-reaction").value.trim()
     }))
   }));
-  return {eyebrow:$("eyebrow").value.trim(),title:$("title").value.trim(),subtitle:$("subtitle").value.trim(),questions};
+  return {eyebrow:$("eyebrow").value.trim(),title:$("title").value.trim(),subtitle:$("subtitle").value.trim(),display:readDisplayControls(),questions};
 }
+function readDisplayControls(){
+  const d=mergeDisplay({});
+  document.querySelectorAll("[data-style]").forEach(el=>{
+    const [section,key]=el.dataset.style.split(".");
+    let v=el.value;
+    if(["size","letter","marginTop","marginBottom","maxWidth"].includes(key))v=safeNum(v,0);
+    if(!d[section])d[section]={};d[section][key]=v;
+  });
+  return d;
+}
+function renderAppearanceControls(display){
+  const d=mergeDisplay(display);
+  document.querySelectorAll("[data-style]").forEach(el=>{
+    const [section,key]=el.dataset.style.split(".");
+    el.value=d[section][key]??"";
+  });
+  renderLivePreview();
+}
+function applyStyle(el,st){
+  el.style.textAlign=st.align;el.style.fontSize=st.size+"px";el.style.fontWeight=st.weight;el.style.color=st.color;el.style.letterSpacing=st.letter+"px";
+  el.style.marginTop=st.marginTop+"px";el.style.marginBottom=st.marginBottom+"px";el.style.maxWidth=st.maxWidth+"px";
+}
+function renderLivePreview(){
+  const d=readDisplayControls();
+  $("liveEyebrow").textContent=$("eyebrow").value||"QUIZ PERSONAL GW";
+  $("liveTitle").textContent=$("title").value||"SEBERAPA KENAL KAMU SAMA STIVEN?";
+  $("liveSubtitle").textContent=$("subtitle").value||"[EDIT SUBJUDUL QUIZ]";
+  const q=document.querySelector(".q-text");$("liveQuestion").textContent=q?.value||"Pertanyaan contoh";
+  applyStyle($("liveEyebrow"),d.eyebrow);applyStyle($("liveTitle"),d.title);applyStyle($("liveSubtitle"),d.subtitle);applyStyle($("liveQuestion"),d.question);
+}
+document.querySelectorAll("#view-appearance input,#view-appearance select").forEach(el=>el.addEventListener("input",renderLivePreview));
+["eyebrow","title","subtitle"].forEach(id=>$(id).addEventListener("input",renderLivePreview));
 
 async function loadQuiz(){
-  if(!db)return;
-  setSave("Memuat quiz...");
+  msg("Memuat quiz...");
   try{
     const meta=await db.collection("quizSettings").doc("main").get();
     const snap=await db.collection("quizQuestions").orderBy("order").get();
-    if(!meta.exists||snap.empty){renderEditor(defaultData());setSave("Belum ada quiz online. Ini template awal.");return;}
-    const d=meta.data();
-    renderEditor({eyebrow:d.eyebrow||"",title:d.title||"",subtitle:d.subtitle||"",questions:snap.docs.map(x=>x.data())});
-    setSave("Quiz berhasil dimuat.");
-  }catch(e){setSave("Gagal memuat quiz: "+e.message);}
+    if(!meta.exists||snap.empty){renderEditor(defaultData());msg("Belum ada data quiz. Template awal sudah dibuat di editor.");return}
+    const m=meta.data();
+    renderEditor({eyebrow:m.eyebrow||"",title:m.title||"",subtitle:m.subtitle||"",display:mergeDisplay(m.display||{}),questions:snap.docs.map(d=>d.data()).sort((a,b)=>(a.order||0)-(b.order||0))});
+    msg("✅ Quiz berhasil dimuat.");
+  }catch(e){msg("❌ Gagal memuat quiz: "+e.message)}
 }
+$("reloadQuiz").onclick=loadQuiz;
 
-async function saveQuiz(){
-  if(!db)return;
-  setSave("Menyimpan...");
+$("saveQuiz").onclick=async()=>{
+  msg("Menyimpan quiz...");
   try{
-    const data=collectEditor();
-    await db.collection("quizSettings").doc("main").set({
-      eyebrow:data.eyebrow,title:data.title,subtitle:data.subtitle,updatedAt:firebase.firestore.FieldValue.serverTimestamp()
-    });
-    const old=await db.collection("quizQuestions").get();
-    const batch=db.batch();
-    old.docs.forEach(d=>batch.delete(d.ref));
-    data.questions.forEach((q,i)=>{
-      const ref=db.collection("quizQuestions").doc("q"+(i+1));
-      batch.set(ref,q);
-    });
+    const d=collectData();
+    await db.collection("quizSettings").doc("main").set({eyebrow:d.eyebrow,title:d.title,subtitle:d.subtitle,display:d.display,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+    const old=await db.collection("quizQuestions").get(),batch=db.batch();
+    old.docs.forEach(x=>batch.delete(x.ref));
+    d.questions.forEach((q,i)=>batch.set(db.collection("quizQuestions").doc("q"+(i+1)),q));
     await batch.commit();
-    setSave("✅ Quiz tersimpan. Peserta sekarang akan mengambil versi terbaru.");
-  }catch(e){setSave("❌ Gagal menyimpan: "+e.message);}
-}
+    currentData=d;msg("✅ Quiz tersimpan. Halaman peserta akan memakai versi terbaru.");
+  }catch(e){msg("❌ Gagal menyimpan quiz: "+e.message)}
+};
+$("saveAppearance").onclick=async()=>{msg("Menyimpan tampilan...");try{const d=readDisplayControls();await db.collection("quizSettings").doc("main").set({display:d,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});currentData.display=d;msg("✅ Tampilan teks tersimpan.");}catch(e){msg("❌ Gagal menyimpan tampilan: "+e.message)}};
+$("resetAppearance").onclick=()=>{renderAppearanceControls(DEFAULT_DISPLAY);msg("Tampilan dikembalikan ke default. Tekan Simpan Tampilan jika ingin menyimpannya.")};
 
-function setupTabs(){
-  document.querySelectorAll("[data-tab]").forEach(btn=>btn.onclick=()=>{
-    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-    btn.classList.add("active");
-    $("editorTab").classList.toggle("hidden",btn.dataset.tab!=="editor");
-    $("resultsTab").classList.toggle("hidden",btn.dataset.tab!=="results");
-    if(btn.dataset.tab==="results")loadResults();
+function buildSoundCards(){
+  const grid=$("soundGrid");grid.innerHTML="";
+  SOUND_KEYS.forEach(k=>{
+    const c=document.createElement("div");c.className="sound-card";
+    c.innerHTML=`<h3>${SOUND_LABELS[k]}</h3><input id="snd_${k}" type="file" accept="audio/*"><audio id="prev_${k}" controls></audio><div class="small">Upload baru akan mengganti suara ini.</div>`;
+    grid.appendChild(c);
+    c.querySelector("input").onchange=async()=>{const f=c.querySelector("input").files[0];if(!f)return;if(f.size>600000){soundMsg("File terlalu besar. Maksimal 600 KB per suara.");c.querySelector("input").value="";return}pendingSounds[k]=await readAsDataURL(f);c.querySelector("audio").src=pendingSounds[k];soundMsg("Suara siap disimpan.")};
   });
 }
+function readAsDataURL(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}
+async function loadSounds(){
+  buildSoundCards();
+  for(const k of SOUND_KEYS){try{const s=await db.collection("quizSounds").doc(k).get();if(s.exists&&s.data().data){$("prev_"+k).src=s.data().data}}catch(e){soundMsg("❌ Gagal memuat suara: "+e.message);break}}
+}
+$("saveSounds").onclick=async()=>{
+  soundMsg("Menyimpan suara...");
+  try{for(const k of SOUND_KEYS)if(Object.prototype.hasOwnProperty.call(pendingSounds,k))await db.collection("quizSounds").doc(k).set({data:pendingSounds[k],updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});pendingSounds={};soundMsg("✅ Semua suara yang dipilih berhasil disimpan.");}
+  catch(e){soundMsg("❌ Gagal menyimpan suara: "+e.message)}
+};
+$("clearSounds").onclick=async()=>{
+  if(!confirm("Hapus semua suara custom?"))return;
+  try{for(const k of SOUND_KEYS)await db.collection("quizSounds").doc(k).delete();SOUND_KEYS.forEach(k=>{$("prev_"+k).src="";$("snd_"+k).value=""});pendingSounds={};soundMsg("✅ Semua suara custom dihapus.");}
+  catch(e){soundMsg("❌ Gagal menghapus suara: "+e.message)}
+};
 
 async function loadResults(){
-  if(!db)return;
-  $("rows").innerHTML='<tr><td colspan="5">Memuat...</td></tr>';
+  $("resultRows").innerHTML='<tr><td colspan="6">Memuat...</td></tr>';
   try{
     const s=await db.collection("quizResults").orderBy("createdAt","desc").limit(500).get();
-    cache=s.docs.map(d=>({id:d.id,...d.data()}));
-    $("rows").innerHTML=cache.map(x=>`<tr><td>${esc(x.name)}</td><td>${Number(x.score)||0}</td><td>${Number(x.questionCount)||0}</td><td>${Math.floor((x.durationSeconds||0)/60)}:${String((x.durationSeconds||0)%60).padStart(2,"0")}</td><td>${x.createdAt?.toDate?x.createdAt.toDate().toLocaleString("id-ID"):"-"}</td></tr>`).join("")||'<tr><td colspan="5">Belum ada hasil.</td></tr>';
-  }catch(e){$("rows").innerHTML='<tr><td colspan="5">Gagal memuat. Periksa Rules dan UID admin.</td></tr>';}
+    resultsCache=s.docs.map(d=>({id:d.id,...d.data()}));
+    $("resultRows").innerHTML=resultsCache.map(x=>{
+      const sec=Math.max(0,Number(x.durationSeconds)||0);
+      return `<tr><td>${esc(x.name)}</td><td>${Number(x.score)||0}</td><td>${Number(x.maxScore)||0}</td><td>${Number(x.questionCount)||0}</td><td>${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")}</td><td>${x.createdAt?.toDate?x.createdAt.toDate().toLocaleString("id-ID"):"-"}</td></tr>`;
+    }).join("")||'<tr><td colspan="6">Belum ada hasil.</td></tr>';
+  }catch(e){$("resultRows").innerHTML='<tr><td colspan="6">❌ Gagal memuat hasil: '+esc(e.message)+'</td></tr>'}
 }
-$("export").onclick=()=>{
-  const rows=[["Nama","Skor","Jumlah soal","Durasi detik","Waktu kirim"],...cache.map(x=>[x.name,x.score,x.questionCount,x.durationSeconds,x.createdAt?.toDate?x.createdAt.toDate().toISOString():""])];
-  const csv=rows.map(r=>r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\n");
-  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));a.download="hasil-quiz-stive.csv";a.click();
+$("refreshResults").onclick=loadResults;
+$("exportResults").onclick=()=>{
+  const rows=[["Nama","Skor","Maksimal","Jumlah soal","Durasi detik","Waktu kirim"],...resultsCache.map(x=>[x.name,x.score,x.maxScore,x.questionCount,x.durationSeconds,x.createdAt?.toDate?x.createdAt.toDate().toISOString():""])];
+  const csv=rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="hasil-quiz-stive.csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500);
 };
 
 $("loginBtn").onclick=async()=>{
-  if(!auth){setMsg("Firebase belum siap. Muat ulang halaman.");return}
-  try{
-    const email=$("email").value.trim();
-    const password=$("password").value;
-    if(!email || !password){setMsg("Masukkan email dan password admin.");return}
-    await auth.signInWithEmailAndPassword(email,password);
-    setMsg("");
-  }catch(e){
-    const code=e && e.code ? e.code : "";
-    const map={
-      "auth/invalid-credential":"Email atau password admin salah.",
-      "auth/user-not-found":"Akun admin tidak ditemukan.",
-      "auth/wrong-password":"Password admin salah.",
-      "auth/invalid-email":"Format email tidak valid.",
-      "auth/too-many-requests":"Terlalu banyak percobaan. Coba lagi nanti."
-    };
-    setMsg("Login gagal: "+(map[code]||e.message));
-  }
+  const email=$("email").value.trim(),password=$("password").value;
+  if(!email||!password){loginMsg("Isi email dan password admin.");return}
+  loginMsg("Login...");
+  try{const c=await auth.signInWithEmailAndPassword(email,password);if(c.user.uid!==ADMIN_UID){await auth.signOut();loginMsg("Akun ini bukan admin yang diizinkan.");return}loginMsg("")}
+  catch(e){loginMsg("❌ Login gagal: "+e.message)}
 };
-$("logout").onclick=()=>auth.signOut();
-$("saveQuiz").onclick=saveQuiz;
-$("reloadQuiz").onclick=loadQuiz;
-$("refresh").onclick=loadResults;
-setupTabs();
+$("logoutBtn").onclick=()=>auth.signOut();
 
 try{
-  if(window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.apiKey&&window.FIREBASE_CONFIG.apiKey){
-    firebase.initializeApp(window.FIREBASE_CONFIG);
-    auth=firebase.auth();db=firebase.firestore();
-    const SOUND_KEYS=["button","0","1","2","3","4","5"];
-    const pendingSounds={};
-    function readAudio(f){return new Promise((r,j)=>{const x=new FileReader();x.onload=()=>r(x.result);x.onerror=j;x.readAsDataURL(f)})}
-    function ss(t){const e=document.getElementById("soundStatus");if(e)e.textContent=t}
-    function sp(k,v){const a=document.getElementById("prev_"+k);if(a){a.src=v||"";a.style.display=v?"block":"none"}}
-    async function loadSounds(){
-      if(!db)return;
-      try{
-        let found=0;
-        for(const k of SOUND_KEYS){
-          const s=await db.collection("quizSounds").doc(k).get();
-          if(s.exists && typeof s.data().dataUrl==="string"){sp(k,s.data().dataUrl);found++}
-        }
-        // Also read the old format so existing uploaded sounds are not lost.
-        const old=await db.collection("quizSettings").doc("sounds").get();
-        if(old.exists){
-          const d=old.data()||{};
-          for(const k of SOUND_KEYS){
-            const a=document.getElementById("prev_"+k);
-            if(a && !a.src && typeof d[k]==="string" && d[k]){sp(k,d[k]);found++}
-          }
-        }
-        ss(found?"Pengaturan suara berhasil dimuat.":"Belum ada pengaturan suara.");
-      }catch(e){ss("Gagal memuat suara: "+e.message)}
+  firebase.initializeApp(window.FIREBASE_CONFIG);
+  auth=firebase.auth();db=firebase.firestore();
+  auth.onAuthStateChanged(async user=>{
+    if(user&&user.uid===ADMIN_UID){
+      $("loginView").classList.add("hidden");$("appView").classList.remove("hidden");
+      await loadQuiz();await loadSounds();
+    }else{
+      $("loginView").classList.remove("hidden");$("appView").classList.add("hidden");
+      if(user)auth.signOut();
     }
-    SOUND_KEYS.forEach(k=>{
-      const i=document.getElementById("snd_"+k);
-      if(i)i.onchange=async()=>{
-        const f=i.files&&i.files[0];
-        if(!f)return;
-        if(f.size>700000){
-          ss("File terlalu besar. Maksimal 700 KB per suara.");
-          i.value="";
-          return;
-        }
-        pendingSounds[k]=await readAudio(f);
-        sp(k,pendingSounds[k]);
-        ss("Suara siap disimpan.");
-      };
-    });
-    document.getElementById("saveSounds")?.addEventListener("click",async()=>{
-      if(!db)return;
-      ss("Menyimpan suara...");
-      try{
-        for(const k of SOUND_KEYS){
-          if(k in pendingSounds){
-            await db.collection("quizSounds").doc(k).set({
-              dataUrl:pendingSounds[k],
-              updatedAt:firebase.firestore.FieldValue.serverTimestamp()
-            });
-          }
-        }
-        ss("✅ Pengaturan suara tersimpan.");
-      }catch(e){ss("❌ Gagal menyimpan: "+e.message)}
-    });
-    document.getElementById("clearSounds")?.addEventListener("click",async()=>{
-      if(!db||!confirm("Hapus semua suara custom?"))return;
-      try{
-        for(const k of SOUND_KEYS)await db.collection("quizSounds").doc(k).set({dataUrl:"",updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
-        SOUND_KEYS.forEach(k=>sp(k,""));
-        ss("Suara custom dihapus.");
-      }catch(e){ss("❌ Gagal menghapus: "+e.message)}
-    });
-    loadSounds();
-    auth.onAuthStateChanged(async u=>{
-      if(u){$("login").classList.add("hidden");$("panel").classList.remove("hidden");$("who").textContent="Login: "+u.email;await loadQuiz();}
-      else{$("login").classList.remove("hidden");$("panel").classList.add("hidden");}
-    });
-  }
-}catch(e){setMsg("Firebase gagal diinisialisasi: "+e.message);}
-</script>
-
-<div id="cropModal" class="crop-modal" aria-hidden="true">
-  <div class="crop-box">
-    <div class="crop-head">
-      <div>
-        <h2 style="margin:0">✂️ Potong Gambar</h2>
-        <small>Hasil reaction selalu 1:1 (kotak).</small>
-      </div>
-      <button type="button" class="secondary" id="cropCancel">Tutup</button>
-    </div>
-    <div id="cropStage" class="crop-stage">
-      <img id="cropImage" class="crop-image" alt="Preview crop">
-      <div class="crop-square"></div>
-    </div>
-    <div class="crop-controls">
-      <button type="button" id="cropMinus">−</button>
-      <input id="cropZoom" type="range" min="1" max="3" step="0.01" value="1">
-      <button type="button" id="cropPlus">+</button>
-      <button type="button" id="cropApply">✅ Gunakan</button>
-    </div>
-    <p class="crop-help">Geser gambar untuk mengatur posisi, lalu atur zoom. Area putih adalah hasil 1:1.</p>
-  </div>
-</div>
-
-<script>
-/* Reaction cropper: output is always a square 1:1 JPEG. */
-(function(){
-  const modal=document.getElementById("cropModal");
-  const stage=document.getElementById("cropStage");
-  const img=document.getElementById("cropImage");
-  const zoom=document.getElementById("cropZoom");
-  const apply=document.getElementById("cropApply");
-  const cancel=document.getElementById("cropCancel");
-  const minus=document.getElementById("cropMinus");
-  const plus=document.getElementById("cropPlus");
-  if(!modal)return;
-
-  let targetInput=null, targetPreview=null, sourceImage=null;
-  let scale=1, baseScale=1, x=0, y=0, dragging=false, sx=0, sy=0, startX=0, startY=0;
-
-  function openCrop(file,input,preview){
-    targetInput=input; targetPreview=preview;
-    const fr=new FileReader();
-    fr.onload=()=>{
-      sourceImage=new Image();
-      sourceImage.onload=()=>{
-        const sw=stage.clientWidth, sh=stage.clientHeight;
-        baseScale=Math.max(sw/sourceImage.naturalWidth, sh/sourceImage.naturalHeight)*.88;
-        scale=baseScale;
-        x=sw/2; y=sh/2;
-        zoom.value=1;
-        img.src=fr.result;
-        update();
-        modal.classList.add("show");
-        modal.setAttribute("aria-hidden","false");
-      };
-      sourceImage.src=fr.result;
-    };
-    fr.readAsDataURL(file);
-  }
-
-  function update(){
-    img.style.width=(sourceImage.naturalWidth*scale)+"px";
-    img.style.height=(sourceImage.naturalHeight*scale)+"px";
-    img.style.left=x+"px";
-    img.style.top=y+"px";
-    img.style.transform="translate(-50%,-50%)";
-  }
-
-  function setZoom(v){
-    const old=scale;
-    scale=baseScale*Number(v);
-    // keep center stable
-    update();
-  }
-
-  zoom.addEventListener("input",()=>setZoom(zoom.value));
-  minus.onclick=()=>{zoom.value=Math.max(1,Number(zoom.value)-.1);setZoom(zoom.value)};
-  plus.onclick=()=>{zoom.value=Math.min(3,Number(zoom.value)+.1);setZoom(zoom.value)};
-
-  function pointerDown(e){
-    dragging=true; img.classList.add("dragging");
-    sx=e.clientX; sy=e.clientY; startX=x; startY=y;
-    if(img.setPointerCapture)img.setPointerCapture(e.pointerId);
-  }
-  function pointerMove(e){
-    if(!dragging)return;
-    x=startX+(e.clientX-sx); y=startY+(e.clientY-sy); update();
-  }
-  function pointerUp(){dragging=false;img.classList.remove("dragging")}
-  img.addEventListener("pointerdown",pointerDown);
-  img.addEventListener("pointermove",pointerMove);
-  img.addEventListener("pointerup",pointerUp);
-  img.addEventListener("pointercancel",pointerUp);
-
-  function close(){modal.classList.remove("show");modal.setAttribute("aria-hidden","true");targetInput=null;targetPreview=null;sourceImage=null}
-
-  cancel.onclick=close;
-  modal.addEventListener("click",e=>{if(e.target===modal)close()});
-
-  apply.onclick=()=>{
-    if(!sourceImage||!targetInput)return;
-    const side=800;
-    const cropSide=Math.min(stage.clientWidth,stage.clientHeight)*.88;
-    const sx0=(stage.clientWidth/2-cropSide/2-x+sourceImage.naturalWidth*scale/2)/scale;
-    const sy0=(stage.clientHeight/2-cropSide/2-y+sourceImage.naturalHeight*scale/2)/scale;
-    const srcSide=cropSide/scale;
-    const c=document.createElement("canvas"); c.width=side;c.height=side;
-    const ctx=c.getContext("2d");
-    ctx.drawImage(sourceImage,sx0,sy0,srcSide,srcSide,0,0,side,side);
-    const data=c.toDataURL("image/jpeg",.82);
-    targetInput.value=data;
-    if(targetPreview){targetPreview.src=data;targetPreview.style.opacity=1}
-    targetInput.dispatchEvent(new Event("input",{bubbles:true}));
-    close();
-  };
-
-  window.openReactionCrop=openCrop;
-})();
+  });
+}catch(e){loginMsg("❌ Firebase gagal dimuat: "+e.message)}
 </script>
 </body>
 </html>
