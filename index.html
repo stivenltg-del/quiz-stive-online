@@ -181,6 +181,7 @@ textarea{min-height:75px;resize:vertical}
 
 
 
+<script src="firebase-config.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
@@ -266,6 +267,7 @@ textarea{min-height:75px;resize:vertical}
 };
 
 let quiz=defaultQuiz;
+const MAX_LIVES=3;
 let current=0,score=0,selected=null,checked=false,participantName="",quizStartedAt=0,resultSent=false;
 let randomizedOptions=[],participantLives=MAX_LIVES;
 
@@ -282,7 +284,16 @@ function startQuiz(){
 function confirmName(){
   const input=document.getElementById("participantName"),name=input.value.trim().replace(/\s+/g," "),err=document.getElementById("nameError");
   if(name.length<2){err.textContent="Nama minimal 2 karakter.";return}
-  participantName=name;participantNameValue=name;err.textContent="";document.getElementById("nameModal").classList.add("hidden");startFreshQuiz();
+  participantName=name;
+  try{
+    startFreshQuiz();
+    err.textContent="";
+    document.getElementById("nameModal").classList.add("hidden");
+  }catch(e){
+    console.error("Gagal memulai quiz:",e);
+    participantName="";
+    err.textContent="Quiz gagal dimulai. Coba refresh halaman.";
+  }
 }
 function calcRangeBounds(max){
   max=Math.max(0,Math.round(Number(max)||0));
