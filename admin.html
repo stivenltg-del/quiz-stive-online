@@ -278,9 +278,8 @@ th,td{padding:10px;border-bottom:1px solid #eee;text-align:left;white-space:nowr
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script>
-let auth=null,db=null,storage=null,currentData=null,resultsCache=[],pendingSounds={};
+let auth=null,db=null,currentData=null,resultsCache=[],pendingSounds={};
 const $=id=>document.getElementById(id);
 const ADMIN_UID="4ATUxzkPlFPxOeCd5ffAsVcVQRf2";
 const SOUND_KEYS=["button","0","1","2","3","4","5"];
@@ -412,10 +411,9 @@ function addOptionCard(parent,o,oi){
     </div>
     <div class="video-box">
       <label><input class="o-video-enabled" type="checkbox" ${o.videoEnabled?'checked':''}> ⭐ Aktifkan video khusus untuk pilihan ini</label>
-      <label>Sumber video</label>
-      <select class="o-video-type"><option value="url" ${o.videoType!=='upload'?'selected':''}>🌐 Dari internet (URL video langsung)</option><option value="upload" ${o.videoType==='upload'?'selected':''}>📱 Dari file HP</option></select>
-      <div class="video-url-wrap"><input class="o-video-url" value="${esc(o.videoUrl||"")}" placeholder="https://contoh.com/video.mp4"></div>
-      <div class="video-upload-wrap hidden"><input class="o-video-file" type="file" accept="video/*"><div class="small">Video dari HP akan disimpan di Firebase Storage, bukan di Firestore. Maksimal 25 MB.</div><div class="video-upload-status small"></div></div>
+      <label>URL video langsung</label>
+      <input class="o-video-url" value="${esc(o.videoUrl||"")}" placeholder="https://contoh.com/video.mp4">
+      <div class="small">Untuk versi gratis Firebase, video tidak diupload ke Firebase Storage. Tempel URL video langsung (.mp4/.webm) dari layanan/hosting yang menyediakan direct video URL.</div>
       <div class="small">Video hanya diputar jika ⭐ aktif dan pilihan ini dipilih peserta. Suara video tidak dimatikan.</div>
     </div>`;
   const file=op.querySelector(".o-file"),img=op.querySelector(".o-image"),prev=op.querySelector(".preview");
@@ -424,25 +422,6 @@ function addOptionCard(parent,o,oi){
   const rfile=op.querySelector(".r-file"),rimg=op.querySelector(".o-reaction"),rprev=op.querySelector(".r-preview");
   rfile.onchange=()=>{if(rfile.files[0])openCrop(rfile.files[0],rimg,rprev);rfile.value=""};
   rimg.oninput=()=>{rprev.src=rimg.value;rprev.style.opacity=1};
-  const vEnabled=op.querySelector(".o-video-enabled"),vType=op.querySelector(".o-video-type"),vUrl=op.querySelector(".o-video-url"),vFile=op.querySelector(".o-video-file"),vUrlWrap=op.querySelector(".video-url-wrap"),vUploadWrap=op.querySelector(".video-upload-wrap"),vStatus=op.querySelector(".video-upload-status");
-  const syncVideoType=()=>{const upload=vType.value==='upload';vUrlWrap.classList.toggle('hidden',upload);vUploadWrap.classList.toggle('hidden',!upload);};
-  vType.onchange=syncVideoType; syncVideoType();
-  vFile.onchange=async()=>{
-    const f=vFile.files&&vFile.files[0]; if(!f)return;
-    if(f.size>25*1024*1024){alert('Video terlalu besar. Maksimal 25 MB.');vFile.value='';return;}
-    if(!storage||!auth.currentUser){vStatus.textContent='Login admin belum siap.';return;}
-    try{
-      vStatus.textContent='Mengupload video...';
-      const qIndex=[...document.querySelectorAll('.qcard')].indexOf(box)+1;
-      const optIndex=oi+1;
-      const path=`quiz-videos/${auth.currentUser.uid}/q${qIndex}_o${optIndex}_${Date.now()}_${f.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
-      const ref=storage.ref().child(path);
-      await ref.put(f,{contentType:f.type||'video/mp4'});
-      const url=await ref.getDownloadURL();
-      vUrl.value=url; vUrl.dataset.storagePath=path;
-      vStatus.textContent='✅ Video tersimpan. Jangan lupa Simpan Quiz.';
-    }catch(e){vStatus.textContent='❌ Upload gagal: '+e.message;}
-  };
   parent.appendChild(op);
    op.querySelector(".o-points").addEventListener("input",()=>{
      if(currentData){syncEditorIntoData();renderRangeEditor(currentData);}
@@ -552,13 +531,9 @@ function collectData(){
       explanation:op.querySelector(".o-explanation").value.trim(),
       reactionImage:op.querySelector(".o-reaction").value.trim(),
       videoEnabled:op.querySelector(".o-video-enabled")?.checked||false,
-      videoType:op.querySelector(".o-video-type")?.value||"url",
+      videoType:"url",
       videoUrl:op.querySelector(".o-video-url")?.value.trim()||"",
-      videoStoragePath:op.querySelector(".o-video-url")?.dataset.storagePath||"",
-      videoEnabled:op.querySelector(".o-video-enabled")?.checked||false,
-      videoType:op.querySelector(".o-video-type")?.value||"url",
-      videoUrl:op.querySelector(".o-video-url")?.value.trim()||"",
-      videoStoragePath:op.querySelector(".o-video-url")?.dataset.storagePath||""
+      videoStoragePath:""
     }))
   }));
   return {eyebrow:$("eyebrow").value.trim(),title:$("title").value.trim(),subtitle:$("subtitle").value.trim(),display:readDisplayControls(),resultRanges:(currentData&&currentData.resultRanges)||defaultResultRanges(),questions};
@@ -717,7 +692,7 @@ $("logoutBtn").onclick=()=>auth.signOut();
 
 try{
   firebase.initializeApp(window.FIREBASE_CONFIG);
-  auth=firebase.auth();db=firebase.firestore();storage=firebase.storage();
+  auth=firebase.auth();db=firebase.firestore();
   auth.onAuthStateChanged(async user=>{
     if(user&&user.uid===ADMIN_UID){
       $("loginView").classList.add("hidden");$("appView").classList.remove("hidden");
