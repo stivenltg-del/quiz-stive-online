@@ -348,12 +348,12 @@ input,textarea,select{background:#25262b;color:#f4f4f5;border-color:#45464d}
 let auth=null,db=null,storage=null,currentData=null,resultsCache=[],pendingSounds={};
 const $=id=>document.getElementById(id);
 const ADMIN_UID="4ATUxzkPlFPxOeCd5ffAsVcVQRf2";
-const SOUND_KEYS=["button","0","1","2","3","4","5"];
-const SOUND_LABELS={button:"Suara tombol"};
+const SOUND_KEYS=["button","achievement","levelup","0","1","2","3","4","5"];
+const SOUND_LABELS={button:"Suara tombol",achievement:"Suara Achievement muncul",levelup:"Suara XP masuk ke level"};
 function refreshSoundKeys(){
   const points=[...document.querySelectorAll(".o-points")].map(el=>Math.floor(Number(el.value))).filter(n=>Number.isFinite(n)&&n>=0);
   const max=Math.min(1000,Math.max(5,...points));
-  SOUND_KEYS.splice(0,SOUND_KEYS.length,"button",...Array.from({length:max+1},(_,i)=>String(i)));
+  SOUND_KEYS.splice(0,SOUND_KEYS.length,"button","achievement","levelup",...Array.from({length:max+1},(_,i)=>String(i)));
 }
 
 function msg(t){$("globalStatus").textContent=t||""}
@@ -377,7 +377,7 @@ function defaultQuestion(i){
       points:[5,3,2,1,0][j],
       feedback:["NAH INI BARU BENER 💀","lumayan ngerti","hampir kena","kok bisa 😭","BRO SIAPA KAMU"][j],
       explanation:"Keterangan jawaban bisa kamu edit sendiri.",
-      reactionImage:"", videoEnabled:false, videoType:"url", videoUrl:"", videoStoragePath:""
+      reactionImage:"", achievementEnabled:false, achievementTitle:"Achievement Made!", achievementName:"The End?", achievementImage:"", videoEnabled:false, videoType:"url", videoUrl:"", videoStoragePath:""
     }))
   };
 }
@@ -390,6 +390,18 @@ function defaultResultRanges(){
     {label:"Level 4",message:"Kenal banget 🔥",reactionImage:""},
     {label:"Level 5",message:"Bestie banget 💀",reactionImage:""}
   ];
+}
+function defaultAchievementLevelRanges(){
+  return [
+    {minLevel:1,maxLevel:1,label:"Level 1",message:"Achievement pertama terbuka!",reactionImage:""},
+    {minLevel:2,maxLevel:2,label:"Level 2",message:"Makin jago!",reactionImage:""},
+    {minLevel:3,maxLevel:3,label:"Level 3",message:"Kolektor achievement!",reactionImage:""},
+    {minLevel:4,maxLevel:4,label:"Level 4",message:"Hampir pro!",reactionImage:""},
+    {minLevel:5,maxLevel:999,label:"Level 5+",message:"Achievement master!",reactionImage:""}
+  ];
+}
+function hasAnyAchievement(data){
+  return (data?.questions||[]).some(q=>(q.options||[]).some(o=>o.achievementEnabled===true));
 }
 function getMaxScore(data){
   return (data?.questions||[]).reduce((sum,q)=>
@@ -419,12 +431,37 @@ function renderRangeEditor(data){
       <label>Reaction image URL</label><input class="range-reaction" value="${esc(r.reactionImage||"")}" placeholder="Opsional">`;
     holder.appendChild(box);
   });
+  const active=hasAnyAchievement(data);
+  let levelSection=document.getElementById("achievementLevelRangeSection");
+  if(!levelSection){
+    levelSection=document.createElement("div");levelSection.id="achievementLevelRangeSection";
+    levelSection.className="card";levelSection.style.marginTop="18px";
+    levelSection.innerHTML='<h2>🟢 Rentang Level Achievement</h2><p class="small">Bagian ini muncul jika minimal satu pilihan jawaban mengaktifkan Achievement. Rentang level, pesan, dan reaction dapat kamu edit.</p><div id="achievementLevelRangeGrid" class="score-range-grid"></div>';
+    holder.insertAdjacentElement("afterend",levelSection);
+  }
+  levelSection.classList.toggle("hidden",!active);
+  if(active){
+    const levelRanges=Array.isArray(data.achievementLevelRanges)&&data.achievementLevelRanges.length===5?data.achievementLevelRanges:defaultAchievementLevelRanges();
+    const levelHolder=levelSection.querySelector("#achievementLevelRangeGrid");levelHolder.innerHTML="";
+    levelRanges.forEach((r,idx)=>{
+      const box=document.createElement("div");box.className="score-range-card";
+      box.innerHTML=`<h3>Tier Achievement ${idx+1}</h3>
+        <div class="grid3"><div><label>Level minimum</label><input type="number" min="0" class="level-min" value="${safeNum(r.minLevel,idx+1)}"></div><div><label>Level maksimum</label><input type="number" min="0" class="level-max" value="${safeNum(r.maxLevel,idx===4?999:idx+1)}"></div></div>
+        <label>Nama tier</label><input class="level-label" value="${esc(r.label||"")}">
+        <label>Pesan hasil</label><textarea class="level-message">${esc(r.message||"")}</textarea>
+        <label>Reaction image URL</label><input class="level-reaction" value="${esc(r.reactionImage||"")}" placeholder="URL atau gambar upload"><input class="level-reaction-file" type="file" accept="image/*"><img class="preview level-reaction-preview" src="${esc(r.reactionImage||"")}" onerror="this.style.opacity=.3">`;
+      levelHolder.appendChild(box);
+      const inp=box.querySelector(".level-reaction"),file=box.querySelector(".level-reaction-file"),preview=box.querySelector(".level-reaction-preview");
+      inp.addEventListener("input",()=>{preview.src=inp.value;preview.style.opacity=inp.value?1:.3});
+      file.addEventListener("change",async()=>{if(!file.files?.[0])return;try{inp.value=await compressImage(file.files[0],700,.70);preview.src=inp.value;preview.style.opacity=1;}catch(e){alert("Gagal membaca gambar tier achievement.")}finally{file.value=""}});
+    });
+  }
 }
 
 function defaultData(){
   return {eyebrow:"QUIZ PERSONAL GW",title:"SEBERAPA KENAL KAMU SAMA STIVEN?",subtitle:"[EDIT SUBJUDUL QUIZ]",
     display:JSON.parse(JSON.stringify(DEFAULT_DISPLAY)),questions:Array.from({length:10},(_,i)=>defaultQuestion(i)),
-    resultRanges:defaultResultRanges()};
+    resultRanges:defaultResultRanges(),achievementLevelRanges:defaultAchievementLevelRanges()};
 }
 function mergeDisplay(d){
   const out=JSON.parse(JSON.stringify(DEFAULT_DISPLAY));
@@ -443,6 +480,7 @@ document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",(
 function renderEditor(data){
   renderGlobalTheme(data.theme||defaultGlobalTheme());
   currentData=data;
+  currentData.achievementLevelRanges=Array.isArray(data.achievementLevelRanges)&&data.achievementLevelRanges.length===5?data.achievementLevelRanges:defaultAchievementLevelRanges();
   $("eyebrow").value=data.eyebrow||"";
   $("title").value=data.title||"";
   $("subtitle").value=data.subtitle||"";
@@ -482,6 +520,18 @@ function addOptionCard(parent,o,oi){
       <div><label>Reaction setelah Cek Jawa</label><input class="r-file" type="file" accept="image/*"><input class="o-reaction" value="${esc(o.reactionImage||"")}" placeholder="Gambar reaction"><div class="small">Tombol upload membuka crop 1:1 (kotak).</div></div>
       <img class="preview r-preview" src="${esc(o.reactionImage||"")}" onerror="this.style.opacity=.3">
     </div>
+    <div class="video-box achievement-box">
+      <label><input class="o-achievement-enabled" type="checkbox" ${o.achievementEnabled?'checked':''}> 🏆 Aktifkan Achievement untuk pilihan ini</label>
+      <div class="achievement-editor ${o.achievementEnabled?'':'hidden'}">
+        <label>Judul notifikasi</label><input class="o-achievement-title" maxlength="80" value="${esc(o.achievementTitle||"Achievement Made!")}">
+        <label>Nama Achievement</label><input class="o-achievement-name" maxlength="100" value="${esc(o.achievementName||"The End?")}">
+        <label>Gambar / ikon Achievement</label>
+        <input class="o-achievement-file" type="file" accept="image/*">
+        <input class="o-achievement-image" value="${esc(o.achievementImage||"")}" placeholder="URL gambar atau hasil upload">
+        <img class="preview o-achievement-preview" src="${esc(o.achievementImage||"")}" onerror="this.style.opacity=.3">
+        <div class="small">Saat peserta memilih jawaban ini, ikon dan notifikasi muncul serta memberi +1 level.</div>
+      </div>
+    </div>
     <div class="video-box">
       <label><input class="o-video-enabled" type="checkbox" ${o.videoEnabled?'checked':''}> ⭐ Aktifkan video khusus untuk pilihan ini</label>
       <label>URL video / TikTok</label>
@@ -518,6 +568,10 @@ function addOptionCard(parent,o,oi){
   const rfile=op.querySelector(".r-file"),rimg=op.querySelector(".o-reaction"),rprev=op.querySelector(".r-preview");
   rfile.onchange=()=>{if(rfile.files[0])openCrop(rfile.files[0],rimg,rprev);rfile.value=""};
   rimg.oninput=()=>{rprev.src=rimg.value;rprev.style.opacity=1};
+  const achToggle=op.querySelector(".o-achievement-enabled"),achEditor=op.querySelector(".achievement-editor"),achImg=op.querySelector(".o-achievement-image"),achPrev=op.querySelector(".o-achievement-preview"),achFile=op.querySelector(".o-achievement-file");
+  achToggle.addEventListener("change",()=>{achEditor.classList.toggle("hidden",!achToggle.checked);if(currentData){syncEditorIntoData();renderRangeEditor(currentData);}});
+  achImg.addEventListener("input",()=>{achPrev.src=achImg.value;achPrev.style.opacity=achImg.value?1:.3;});
+  achFile.addEventListener("change",async()=>{if(!achFile.files?.[0])return;try{achImg.value=await compressImage(achFile.files[0],500,.78);achPrev.src=achImg.value;achPrev.style.opacity=1;}catch(e){alert("Gagal membaca ikon achievement.")}finally{achFile.value="";}});
   parent.appendChild(op);
    op.querySelector(".o-points").addEventListener("input",()=>{
      if(currentData){syncEditorIntoData();renderRangeEditor(currentData);}
@@ -626,13 +680,19 @@ function collectData(){
       feedback:op.querySelector(".o-feedback").value.trim(),
       explanation:op.querySelector(".o-explanation").value.trim(),
       reactionImage:op.querySelector(".o-reaction").value.trim(),
+      achievementEnabled:op.querySelector(".o-achievement-enabled")?.checked||false,
+      achievementTitle:op.querySelector(".o-achievement-title")?.value.trim()||"Achievement Made!",
+      achievementName:op.querySelector(".o-achievement-name")?.value.trim()||"The End?",
+      achievementImage:op.querySelector(".o-achievement-image")?.value.trim()||"",
       videoEnabled:op.querySelector(".o-video-enabled")?.checked||false,
       videoType:op.querySelector(".o-video-type")?.value||"url",
       videoUrl:op.querySelector(".o-video-url")?.value.trim()||"",
       videoStoragePath:op.dataset.videoStoragePath||""
     }))
   }));
-  return {eyebrow:$("eyebrow").value.trim(),title:$("title").value.trim(),subtitle:$("subtitle").value.trim(),display:readDisplayControls(),theme:readGlobalTheme(),resultRanges:(currentData&&currentData.resultRanges)||defaultResultRanges(),questions};
+  const resultRanges=[...document.querySelectorAll("#scoreRangeGrid .score-range-card")].map(box=>({label:box.querySelector(".range-label")?.value||"",message:box.querySelector(".range-message")?.value||"",reactionImage:box.querySelector(".range-reaction")?.value||""}));
+  const levelRanges=[...document.querySelectorAll("#achievementLevelRangeGrid .score-range-card")].map(box=>({minLevel:safeNum(box.querySelector(".level-min")?.value,1),maxLevel:safeNum(box.querySelector(".level-max")?.value,999),label:box.querySelector(".level-label")?.value||"",message:box.querySelector(".level-message")?.value||"",reactionImage:box.querySelector(".level-reaction")?.value||""}));
+  return {eyebrow:$("eyebrow").value.trim(),title:$("title").value.trim(),subtitle:$("subtitle").value.trim(),display:readDisplayControls(),theme:readGlobalTheme(),resultRanges:resultRanges.length===5?resultRanges:((currentData&&currentData.resultRanges)||defaultResultRanges()),achievementLevelRanges:levelRanges.length===5?levelRanges:((currentData&&currentData.achievementLevelRanges)||defaultAchievementLevelRanges()),questions};
 }
 function readDisplayControls(){
   const d=mergeDisplay({});
@@ -674,7 +734,7 @@ async function loadQuiz(){
     const snap=await db.collection("quizQuestions").orderBy("order").get();
     if(!meta.exists||snap.empty){renderEditor(defaultData());msg("Belum ada data quiz. Template awal sudah dibuat di editor.");return}
     const m=meta.data();
-    renderEditor({eyebrow:m.eyebrow||"",title:m.title||"",subtitle:m.subtitle||"",display:mergeDisplay(m.display||{}),theme:m.theme||defaultGlobalTheme(),resultRanges:(m.resultRanges&&m.resultRanges.length===5)?m.resultRanges:defaultResultRanges(),questions:snap.docs.map(d=>d.data()).sort((a,b)=>(a.order||0)-(b.order||0))});
+    renderEditor({eyebrow:m.eyebrow||"",title:m.title||"",subtitle:m.subtitle||"",display:mergeDisplay(m.display||{}),theme:m.theme||defaultGlobalTheme(),resultRanges:(m.resultRanges&&m.resultRanges.length===5)?m.resultRanges:defaultResultRanges(),achievementLevelRanges:Array.isArray(m.achievementLevelRanges)&&m.achievementLevelRanges.length===5?m.achievementLevelRanges:defaultAchievementLevelRanges(),questions:snap.docs.map(d=>d.data()).sort((a,b)=>(a.order||0)-(b.order||0))});
     msg("✅ Quiz berhasil dimuat.");
   }catch(e){msg("❌ Gagal memuat quiz: "+e.message)}
 }
@@ -687,6 +747,8 @@ function syncEditorIntoData(){
   currentData.title=$("title").value;
   currentData.subtitle=$("subtitle").value;
   currentData.resultRanges=currentData.resultRanges&&currentData.resultRanges.length===5?currentData.resultRanges:defaultResultRanges();
+  const levelRanges=[...document.querySelectorAll("#achievementLevelRangeGrid .score-range-card")].map(box=>({minLevel:safeNum(box.querySelector(".level-min")?.value,1),maxLevel:safeNum(box.querySelector(".level-max")?.value,999),label:box.querySelector(".level-label")?.value||"",message:box.querySelector(".level-message")?.value||"",reactionImage:box.querySelector(".level-reaction")?.value||""}));
+  if(levelRanges.length===5)currentData.achievementLevelRanges=levelRanges;
   currentData.questions=[...document.querySelectorAll(".qcard")].map((box,qi)=>({
     order:qi+1,
     question:box.querySelector(".q-text").value,
@@ -697,6 +759,10 @@ function syncEditorIntoData(){
       feedback:op.querySelector(".o-feedback").value,
       explanation:op.querySelector(".o-explanation").value,
       reactionImage:op.querySelector(".o-reaction").value.trim(),
+      achievementEnabled:op.querySelector(".o-achievement-enabled")?.checked||false,
+      achievementTitle:op.querySelector(".o-achievement-title")?.value.trim()||"Achievement Made!",
+      achievementName:op.querySelector(".o-achievement-name")?.value.trim()||"The End?",
+      achievementImage:op.querySelector(".o-achievement-image")?.value.trim()||"",
       videoEnabled:op.querySelector(".o-video-enabled")?.checked||false,
       videoType:op.querySelector(".o-video-type")?.value||"url",
       videoUrl:op.querySelector(".o-video-url")?.value.trim()||"",
@@ -730,9 +796,10 @@ async function persistImageValue(value, path){
 async function persistQuizImages(data){
   const tasks=[];
   (data.questions||[]).forEach((q,qi)=>(q.options||[]).forEach((o,oi)=>{
-    tasks.push(async()=>{o.image=await persistImageValue(o.image,`q${qi+1}_o${oi+1}_choice.jpg`);o.reactionImage=await persistImageValue(o.reactionImage,`q${qi+1}_o${oi+1}_reaction.jpg`)});
+    tasks.push(async()=>{o.image=await persistImageValue(o.image,`q${qi+1}_o${oi+1}_choice.jpg`);o.reactionImage=await persistImageValue(o.reactionImage,`q${qi+1}_o${oi+1}_reaction.jpg`);o.achievementImage=await persistImageValue(o.achievementImage,`q${qi+1}_o${oi+1}_achievement.png`)});
   }));
   (data.resultRanges||[]).forEach((r,ri)=>tasks.push(async()=>{r.reactionImage=await persistImageValue(r.reactionImage,`result_${ri+1}_reaction.jpg`)}));
+  (data.achievementLevelRanges||[]).forEach((r,ri)=>tasks.push(async()=>{r.reactionImage=await persistImageValue(r.reactionImage,`achievement_tier_${ri+1}_reaction.png`)}));
   // Execute at most three tasks at once to protect mobile connections.
   for(let i=0;i<tasks.length;i+=3){await Promise.all(tasks.slice(i,i+3).map(run=>run()));msg(`Mengunggah gambar… ${Math.min(i+3,tasks.length)} dari ${tasks.length}`)}
   // Reflect Storage URLs in editor fields so subsequent saves do not upload duplicates.
@@ -742,32 +809,48 @@ async function persistQuizImages(data){
     const options=[...card.querySelectorAll(".option")];
     (q.options||[]).forEach((o,oi)=>{
       const op=options[oi]; if(!op)return;
-      const image=op.querySelector(".o-image"),reaction=op.querySelector(".o-reaction");
+      const image=op.querySelector(".o-image"),reaction=op.querySelector(".o-reaction"),achievement=op.querySelector(".o-achievement-image");
       if(image){image.value=o.image||"";const preview=op.querySelector(".preview");if(preview){preview.src=o.image||"";preview.style.opacity=o.image?1:.3;}}
       if(reaction){reaction.value=o.reactionImage||"";const preview=op.querySelector(".r-preview");if(preview){preview.src=o.reactionImage||"";preview.style.opacity=o.reactionImage?1:.3;}}
+      if(achievement){achievement.value=o.achievementImage||"";const preview=op.querySelector(".o-achievement-preview");if(preview){preview.src=o.achievementImage||"";preview.style.opacity=o.achievementImage?1:.3;}}
     });
   });
+  document.querySelectorAll("#achievementLevelRangeGrid .level-reaction").forEach((el,ri)=>{if(data.achievementLevelRanges?.[ri])el.value=data.achievementLevelRanges[ri].reactionImage||"";});
   return data;
 }
 
 $("saveRanges").onclick=async()=>{
   try{
     syncEditorIntoData();
-    const ranges=[...document.querySelectorAll(".score-range-card")].map(box=>({
+    const ranges=[...document.querySelectorAll("#scoreRangeGrid .score-range-card")].map(box=>({
       label:box.querySelector(".range-label").value,
       message:box.querySelector(".range-message").value,
       reactionImage:box.querySelector(".range-reaction").value
     }));
-    for(let ri=0;ri<ranges.length;ri++) ranges[ri].reactionImage=await persistImageValue(ranges[ri].reactionImage,`result_${ri+1}_reaction.jpg`);
-    document.querySelectorAll(".range-reaction").forEach((el,ri)=>{if(ranges[ri])el.value=ranges[ri].reactionImage||"";});
+    const levelRanges=[...document.querySelectorAll("#achievementLevelRangeGrid .score-range-card")].map(box=>({
+      minLevel:safeNum(box.querySelector(".level-min")?.value,1),
+      maxLevel:safeNum(box.querySelector(".level-max")?.value,999),
+      label:box.querySelector(".level-label")?.value||"",
+      message:box.querySelector(".level-message")?.value||"",
+      reactionImage:box.querySelector(".level-reaction")?.value||""
+    }));
+    if(hasAnyAchievement(currentData)&&levelRanges.some(r=>!Number.isFinite(Number(r.minLevel))||!Number.isFinite(Number(r.maxLevel))||Number(r.minLevel)<0||Number(r.maxLevel)<Number(r.minLevel)))throw new Error("Rentang level achievement tidak valid. Level maksimum harus sama atau lebih besar dari minimum.");
+    for(let ri=0;ri<ranges.length;ri++)ranges[ri].reactionImage=await persistImageValue(ranges[ri].reactionImage,`result_${ri+1}_reaction.jpg`);
+    document.querySelectorAll("#scoreRangeGrid .range-reaction").forEach((el,ri)=>{if(ranges[ri])el.value=ranges[ri].reactionImage||"";});
     currentData.resultRanges=ranges;
-    await db.collection("quizSettings").doc("main").set({resultRanges:ranges},{merge:true});
+    if(levelRanges.length===5){
+      for(let ri=0;ri<levelRanges.length;ri++)levelRanges[ri].reactionImage=await persistImageValue(levelRanges[ri].reactionImage,`achievement_tier_${ri+1}_reaction.png`);
+      currentData.achievementLevelRanges=levelRanges;
+      document.querySelectorAll("#achievementLevelRangeGrid .level-reaction").forEach((el,ri)=>{if(levelRanges[ri])el.value=levelRanges[ri].reactionImage||"";});
+    }
+    await db.collection("quizSettings").doc("main").set({resultRanges:ranges,achievementLevelRanges:currentData.achievementLevelRanges||defaultAchievementLevelRanges()},{merge:true});
     renderRangeEditor(currentData);
     $("rangeStatus").textContent="Rentang hasil berhasil disimpan.";
   }catch(e){$("rangeStatus").textContent="Gagal menyimpan: "+e.message}
 };
 $("resetRanges").onclick=()=>{
   currentData.resultRanges=defaultResultRanges();
+  currentData.achievementLevelRanges=defaultAchievementLevelRanges();
   renderRangeEditor(currentData);
 };
 
@@ -784,6 +867,10 @@ $("saveQuiz").onclick=async()=>{
     if(!d.questions.length) throw new Error("Quiz harus memiliki minimal satu soal.");
     if(d.questions.length>100) throw new Error("Maksimal 100 soal agar penyimpanan tetap aman.");
     if(d.questions.some(q=>!q.question || !Array.isArray(q.options) || q.options.length!==5)) throw new Error("Setiap soal wajib punya pertanyaan dan tepat 5 pilihan A–E.");
+    if(hasAnyAchievement(d)){
+      const tiers=d.achievementLevelRanges||defaultAchievementLevelRanges();
+      if(tiers.length!==5||tiers.some(r=>!Number.isFinite(Number(r.minLevel))||!Number.isFinite(Number(r.maxLevel))||Number(r.minLevel)<0||Number(r.maxLevel)<Number(r.minLevel)))throw new Error("Rentang level achievement tidak valid. Level maksimum harus sama atau lebih besar dari minimum.");
+    }
     msg("Mengunggah gambar ke Cloudinary. Jangan tutup halaman…");
     d=await persistQuizImages(d);
     msg("Menyimpan pertanyaan ke Firestore…");
@@ -792,7 +879,7 @@ $("saveQuiz").onclick=async()=>{
     const batch=db.batch();
     old.docs.forEach(x=>batch.delete(x.ref));
     d.questions.forEach((q,i)=>batch.set(db.collection("quizQuestions").doc("q"+(i+1)),q));
-    batch.set(db.collection("quizSettings").doc("main"),{eyebrow:d.eyebrow,title:d.title,subtitle:d.subtitle,display:d.display,theme:d.theme||readGlobalTheme(),resultRanges:d.resultRanges,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+    batch.set(db.collection("quizSettings").doc("main"),{eyebrow:d.eyebrow,title:d.title,subtitle:d.subtitle,display:d.display,theme:d.theme||readGlobalTheme(),resultRanges:d.resultRanges,achievementLevelRanges:d.achievementLevelRanges||defaultAchievementLevelRanges(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
     await batch.commit();
     currentData=d;msg("✅ Quiz berhasil disimpan ke Firestore. Gambar dimuat dari Cloudinary; halaman publik akan membaca versi terbaru saat dimuat ulang.");
   }catch(e){console.error("Gagal menyimpan Quiz Stive",e);msg("❌ Gagal menyimpan quiz: "+(e.message||String(e))+". Data lama di Firestore tidak dihapus jika batch gagal.")}
@@ -812,8 +899,8 @@ function buildSoundCards(){
   const grid=$("soundGrid");grid.innerHTML="";
   SOUND_KEYS.forEach(k=>{
     const c=document.createElement("div");c.className="sound-card";
-    const label=k==="button"?"Suara tombol":`Suara ${k} poin`;
-    c.innerHTML=`<h3>${label}</h3><input id="snd_${k}" type="file" accept="audio/*"><audio id="prev_${k}" controls></audio><div class="small">Upload baru akan mengganti suara ini.</div>`;
+    const label=SOUND_LABELS[k]||(k==="achievement"?"Suara Achievement muncul":k==="levelup"?"Suara XP masuk ke level":`Suara ${k} poin`);
+    c.innerHTML=`<h3>${label}</h3><input id="snd_${k}" type="file" accept="audio/*"><audio id="prev_${k}" controls></audio><div class="small">Upload baru akan mengganti suara ini. Maksimal 600 KB.</div>`;
     grid.appendChild(c);
     c.querySelector("input").onchange=async()=>{const f=c.querySelector("input").files[0];if(!f)return;if(f.size>600000){soundMsg("File terlalu besar. Maksimal 600 KB per suara.");c.querySelector("input").value="";return}try{pendingSounds[k]=await readAsDataURL(f);c.querySelector("audio").src=pendingSounds[k];soundMsg("Suara siap disimpan.")}catch(e){soundMsg("Gagal membaca file suara: "+e.message)}};
   });

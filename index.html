@@ -222,6 +222,30 @@ body{background:#f8f8fa!important;color:#24252a;-webkit-font-smoothing:antialias
 .topbar{position:relative}.topbar:after{content:"";display:block;height:5px;width:76px;margin-top:10px;border-radius:5px;background:repeating-linear-gradient(90deg,#202124 0 10px,#fff 10px 20px);border:1px solid #eee}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 </style>
+
+<style>
+.achievement-hud{position:relative;margin:12px auto 18px;width:min(100%,520px);padding:13px 14px 10px;background:#090d08;border:2px solid #303b28;box-shadow:inset 0 0 0 2px #151b12;image-rendering:pixelated;color:#d8ffd1;text-align:center}
+.achievement-level-number{font:900 28px/1.1 ui-monospace,monospace;color:#8cff42;text-shadow:2px 2px #24490b;margin-bottom:7px}
+.achievement-xp-track{height:13px;padding:2px;background:#222a20;border:2px solid #526044;box-shadow:inset 0 0 0 1px #10150e;overflow:hidden}
+.achievement-xp-fill{height:100%;width:100%;background:repeating-linear-gradient(90deg,#80ff4a 0 18px,#397f1f 18px 21px);transform:scaleX(0);transform-origin:left center;box-shadow:0 0 8px #76ff4b}
+.achievement-xp-fill.filling{animation:achievementXpFill .82s steps(12,end) forwards}
+.achievement-xp-caption{font:10px ui-monospace,monospace;letter-spacing:1px;color:#b2cda5;margin-top:6px}
+@keyframes achievementXpFill{0%{transform:scaleX(0)}88%{transform:scaleX(1)}100%{transform:scaleX(1)}}
+.achievement-toast{position:fixed;z-index:99990;top:18px;left:50%;width:min(92vw,410px);transform:translate(-50%,-150%);opacity:0;display:flex;align-items:center;gap:13px;padding:13px 17px;background:#252725;border:4px solid #555a55;box-shadow:inset 0 0 0 3px #151615,0 8px 24px #0008;color:#fff;font-family:ui-monospace,monospace;transition:transform .32s steps(5,end),opacity .25s}
+.achievement-toast.show{transform:translate(-50%,0);opacity:1}
+.achievement-toast img{width:48px;height:48px;object-fit:contain;image-rendering:pixelated;flex:0 0 48px}
+.achievement-toast-title{font-weight:900;color:#f4ff4c;font-size:clamp(13px,3.5vw,17px);line-height:1.2}
+.achievement-toast-name{font-weight:800;font-size:clamp(16px,4vw,21px);margin-top:5px;overflow-wrap:anywhere}
+.achievement-toast-xp{font-size:11px;color:#9dff62;margin-top:4px}
+.xp-orb{position:fixed;z-index:99989;width:13px;height:13px;pointer-events:none;image-rendering:pixelated;background:#65ff1d;border:3px solid #326b09;box-shadow:inset 0 0 0 2px #a5ff37;animation:xpOrbFly .82s cubic-bezier(.15,.68,.25,1) forwards}
+.xp-orb.gold{background:#ffe72b;border-color:#887000;box-shadow:inset 0 0 0 2px #fff35c}
+@keyframes xpOrbFly{0%{transform:translate(0,0) scale(1.25);opacity:1}40%{opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:.15}}
+.achievement-tier-result{margin:22px 0;padding:16px;border:2px solid #526044;background:#11170f;border-radius:14px;text-align:center;color:#eaffdf}
+.achievement-tier-result h2{margin:0 0 8px;color:#a3ff56;font-family:ui-monospace,monospace}
+.achievement-tier-result p{margin:0 0 10px}
+.achievement-tier-result img{display:block;width:min(100%,300px);max-height:300px;object-fit:contain;margin:12px auto 0}
+@media(prefers-reduced-motion:reduce){.achievement-toast,.xp-orb,.achievement-xp-fill.filling{animation:none!important;transition:none!important}.achievement-toast.show{transform:translate(-50%,0)}}
+</style>
 </head>
 <body>
 <div id="nameModal" class="name-modal hidden">
@@ -254,6 +278,7 @@ body{background:#f8f8fa!important;color:#24252a;-webkit-font-smoothing:antialias
       <div class="quiz-head">
         <div class="progress" id="progress"></div>
         <div class="livesbar" id="livesBar"></div>
+        <div id="achievementHud" class="achievement-hud hidden" aria-live="polite"><div class="achievement-level-number" id="achievementLevelNumber">0</div><div class="achievement-xp-track"><div class="achievement-xp-fill" id="achievementXpFill"></div></div><div class="achievement-xp-caption">XP • Achievement</div></div>
         <div id="pointsPop" class="points-pop hidden"></div>
         <h1 class="question" id="question"></h1>
         <div class="options" id="options"></div>
@@ -285,6 +310,7 @@ body{background:#f8f8fa!important;color:#24252a;-webkit-font-smoothing:antialias
   title:"SEBERAPA KENAL KAMU SAMA STIVEN?",
   subtitle:"[EDIT SUBJUDUL QUIZ]",
   display:{eyebrow:{},title:{},subtitle:{},question:{}},
+  achievementLevelRanges:[],
   resultRanges:[
     {label:"Level 1",message:"Masih kurang kenal 😭",reactionImage:""},
     {label:"Level 2",message:"Lumayan kenal 👀",reactionImage:""},
@@ -299,7 +325,7 @@ body{background:#f8f8fa!important;color:#24252a;-webkit-font-smoothing:antialias
       text:x,image:`https://placehold.co/600x400/F2F3F7/202737?text=Pilihan+${String.fromCharCode(65+i)}`,
       points:[5,3,2,1,0][i],
       feedback:["NAH INI BARU BENER 💀","lumayan ngerti","hampir kena","kok bisa 😭","BRO SIAPA KAMU"][i],
-      explanation:"Keterangan jawaban bisa kamu edit sendiri.",reactionImage:""
+      explanation:"Keterangan jawaban bisa kamu edit sendiri.",reactionImage:"",achievementEnabled:false,achievementTitle:"Achievement Made!",achievementName:"The End?",achievementImage:""
     }))
   }))
 };
@@ -307,14 +333,14 @@ body{background:#f8f8fa!important;color:#24252a;-webkit-font-smoothing:antialias
 let quiz=defaultQuiz;
 const MAX_LIVES=3;
 let current=0,score=0,selected=null,checked=false,participantName="",quizStartedAt=0,resultSent=false,questionStartedAt=0;
-let randomizedOptions=[],participantLives=MAX_LIVES,answerLog=[];
+let randomizedOptions=[],participantLives=MAX_LIVES,answerLog=[],achievementLevel=0,xpAnimationToken=0;
 
 function show(id){["home","quiz","final"].forEach(x=>document.getElementById(x).classList.add("hidden"));document.getElementById(id).classList.remove("hidden")}
 function resetLives(){participantLives=MAX_LIVES;renderLives()}
 function renderLives(){const el=document.getElementById("livesBar");if(!el)return;const heart=(filled)=>`<span class="heart" aria-label="${filled?"Nyawa tersedia":"Nyawa habis"}"><svg viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path d="M2 1h4v1h4V1h4v1h1v4h-1v2h-1v2h-2v2H9v1H7v-1H5v-2H3V8H2V6H1V2h1z" fill="${filled?"#ef3340":"#fff"}" stroke="${filled?"#292929":"#d94b55"}" stroke-width=".8"/><path d="M3 2h3v1h4V2h3v3h-1v2h-1v2H9v2H7v-1H5V8H4V6H3z" fill="${filled?"#ef3340":"#fff"}"/><path d="M3 2h3v1H4v2H3z" fill="${filled?"#ff7b83":"#fff"}"/></svg></span>`;el.innerHTML=`Nyawa ${Array.from({length:MAX_LIVES},(_,i)=>heart(i<participantLives)).join("")}`;}
 function showPoints(points){const el=document.getElementById("pointsPop");if(!el)return;el.textContent=points>0?`+${points} poin 🎉`:"0 poin • -1 ❤️";el.classList.remove("hidden");}
 function hidePoints(){document.getElementById("pointsPop")?.classList.add("hidden")}
-function startFreshQuiz(){current=0;score=0;selected=null;checked=false;resultSent=false;answerLog=[];resetLives();quizStartedAt=Date.now();questionStartedAt=quizStartedAt;show("quiz");renderQuestion()}
+function startFreshQuiz(){current=0;score=0;selected=null;checked=false;resultSent=false;answerLog=[];achievementLevel=0;renderAchievementHud();resetLives();quizStartedAt=Date.now();questionStartedAt=quizStartedAt;show("quiz");renderQuestion()}
 function startQuiz(){
   if(!participantName){document.getElementById("nameModal").classList.remove("hidden");setTimeout(()=>document.getElementById("participantName").focus(),50);return}
   startFreshQuiz();
@@ -343,6 +369,71 @@ function resultFromScore(sc,max,ranges){
   let i=b.findIndex(x=>s>=x.min&&s<=x.max);if(i<0)i=s>=b[4].min?4:0;
   return {range:rs[i],bounds:b[i],index:i};
 }
+function defaultAchievementLevelRanges(){
+  return [
+    {minLevel:1,maxLevel:1,label:"Level 1",message:"Achievement pertama terbuka!",reactionImage:""},
+    {minLevel:2,maxLevel:2,label:"Level 2",message:"Makin jago!",reactionImage:""},
+    {minLevel:3,maxLevel:3,label:"Level 3",message:"Kolektor achievement!",reactionImage:""},
+    {minLevel:4,maxLevel:4,label:"Level 4",message:"Hampir pro!",reactionImage:""},
+    {minLevel:5,maxLevel:999,label:"Level 5+",message:"Achievement master!",reactionImage:""}
+  ];
+}
+function hasAnyAchievement(){
+  return (quiz?.questions||[]).some(q=>(q.options||[]).some(o=>o.achievementEnabled===true));
+}
+function getAchievementTier(level){
+  const ranges=Array.isArray(quiz.achievementLevelRanges)&&quiz.achievementLevelRanges.length===5?quiz.achievementLevelRanges:defaultAchievementLevelRanges();
+  const n=Math.max(0,Number(level)||0);
+  return ranges.find(r=>n>=Math.max(0,Number(r.minLevel)||0)&&n<=Math.max(Number(r.minLevel)||0,Number(r.maxLevel)||0))
+    ||ranges.slice().sort((a,b)=>Math.abs(n-(Number(a.minLevel)||0))-Math.abs(n-(Number(b.minLevel)||0)))[0];
+}
+function renderAchievementHud(){
+  const hud=document.getElementById("achievementHud");if(!hud)return;
+  hud.classList.toggle("hidden",!hasAnyAchievement());
+  const num=document.getElementById("achievementLevelNumber");if(num)num.textContent=String(achievementLevel);
+}
+function showAchievement(o){
+  achievementLevel++;
+  renderAchievementHud();
+  const hud=document.getElementById("achievementHud"),fill=document.getElementById("achievementXpFill");
+  if(fill){
+    fill.classList.remove("filling");fill.style.transform="scaleX(0)";void fill.offsetWidth;fill.classList.add("filling");
+    const token=++xpAnimationToken;
+    setTimeout(()=>{if(token===xpAnimationToken){fill.classList.remove("filling");fill.style.transform="scaleX(0)";}},950);
+  }
+  let toast=document.getElementById("achievementToast");
+  if(!toast){toast=document.createElement("div");toast.id="achievementToast";toast.className="achievement-toast";toast.innerHTML='<img alt="Ikon achievement"><div><div class="achievement-toast-title"></div><div class="achievement-toast-name"></div><div class="achievement-toast-xp">+1 LEVEL • +XP</div></div>';document.body.appendChild(toast);}
+  const image=toast.querySelector("img");image.src=o.achievementImage||"";image.style.visibility=o.achievementImage?"visible":"hidden";
+  playCustomSound("achievement");
+  toast.querySelector(".achievement-toast-title").textContent=o.achievementTitle||"Achievement Made!";
+  toast.querySelector(".achievement-toast-name").textContent=o.achievementName||"Achievement unlocked!";
+  toast.classList.remove("show");void toast.offsetWidth;toast.classList.add("show");
+  clearTimeout(toast._hideTimer);toast._hideTimer=setTimeout(()=>toast.classList.remove("show"),3000);
+  if(hud){
+    const hr=hud.getBoundingClientRect(),source=document.querySelector(".option.selected"),sr=source?.getBoundingClientRect();
+    const sx=sr?sr.left+sr.width/2:innerWidth*.5,sy=sr?sr.top+sr.height/2:innerHeight*.52;
+    const tx=hr.left+hr.width/2,ty=hr.top+hr.height/2;
+    for(let i=0;i<10;i++){
+      const orb=document.createElement("span");orb.className="xp-orb"+(i%3===0?" gold":"");
+      const ox=sx+(Math.random()-.5)*(sr?Math.min(110,sr.width):150),oy=sy+(Math.random()-.5)*(sr?Math.min(65,sr.height):90);
+      orb.style.left=ox+"px";orb.style.top=oy+"px";
+      orb.style.setProperty("--dx",(tx-ox)+"px");orb.style.setProperty("--dy",(ty-oy)+"px");
+      orb.style.animationDelay=(Math.random()*.16)+"s";document.body.appendChild(orb);
+      setTimeout(()=>{orb.remove();if(i===9)playCustomSound("levelup");},1200);
+    }
+  }
+}
+function renderAchievementTierResult(){
+  document.querySelector("#final .achievement-tier-result")?.remove();
+  if(!hasAnyAchievement()||achievementLevel<1)return;
+  const r=getAchievementTier(achievementLevel)||{},box=document.createElement("div");
+  box.className="achievement-tier-result";
+  const h=document.createElement("h2");h.textContent=(r.label||("Level "+achievementLevel))+" • "+achievementLevel+" level";
+  const p=document.createElement("p");p.textContent=r.message||"Achievement level kamu";
+  box.append(h,p);
+  if(r.reactionImage){const img=document.createElement("img");img.src=r.reactionImage;img.alt="Reaction tier achievement";img.onerror=()=>img.remove();box.appendChild(img);}
+  const status=document.getElementById("resultSaveStatus");if(status)status.before(box);else document.getElementById("finalText")?.after(box);
+}
 function shuffleCopy(arr){
   const a=Array.isArray(arr)?arr.slice():[];
   for(let i=a.length-1;i>0;i--){
@@ -357,7 +448,7 @@ function renderQuestion(){
   randomizedOptions=shuffleCopy(Array.isArray(q.options)?q.options:[]);
   document.getElementById("progress").textContent=`PERTANYAAN ${current+1} / ${quiz.questions.length}`;
   document.getElementById("question").textContent=q.question||"";
-  applyGlobalTheme(quiz.theme||{});applyDisplayStyles(quiz.display||{});hidePoints();renderLives();
+  applyGlobalTheme(quiz.theme||{});applyDisplayStyles(quiz.display||{});hidePoints();renderLives();renderAchievementHud();
   document.getElementById("feedback").classList.add("hidden");document.getElementById("nextBtn").classList.add("hidden");document.getElementById("checkBtn").classList.remove("hidden");
   selected=null;checked=false;questionStartedAt=Date.now();const opinion=document.getElementById("questionOpinion");if(opinion)opinion.value="";const skip=document.getElementById("skipBtn");if(skip)skip.classList.remove("hidden");
   document.getElementById("options").innerHTML=randomizedOptions.map((o,i)=>`<button class="option" onclick="selectOption(${i})"><img src="${escapeAttr(o.image||"")}" onerror="this.style.display='none'"><span><b>${String.fromCharCode(65+i)}. ${escapeHTML(o.text||"")}</b></span></button>`).join("");
@@ -442,7 +533,8 @@ function checkAnswer(){
   checked=true;
   const o=randomizedOptions[selected]||{};
   const pts=Math.max(0,Number(o.points)||0);
-  answerLog.push({question:quiz.questions[current]?.question||"",selectedText:o.text||"",points:pts,skipped:false,opinion:(document.getElementById("questionOpinion")?.value||"").trim().slice(0,1200),durationSeconds:Math.max(0,Math.round((Date.now()-questionStartedAt)/1000)),feedback:o.feedback||"",explanation:o.explanation||""});
+  if(o.achievementEnabled===true)showAchievement(o);
+  answerLog.push({question:quiz.questions[current]?.question||"",selectedText:o.text||"",points:pts,achievement:!!o.achievementEnabled,achievementName:o.achievementEnabled?(o.achievementName||"Achievement unlocked!"):"",achievementLevel:o.achievementEnabled?achievementLevel:0,skipped:false,opinion:(document.getElementById("questionOpinion")?.value||"").trim().slice(0,1200),durationSeconds:Math.max(0,Math.round((Date.now()-questionStartedAt)/1000)),feedback:o.feedback||"",explanation:o.explanation||""});
   score+=pts;showPoints(pts);if(typeof playCustomSound==="function")playCustomSound(pts);
   if(pts===0)participantLives=Math.max(0,participantLives-1);
   renderLives();
@@ -465,6 +557,7 @@ function finishQuiz(){
   const oldImg=document.querySelector("#final .result-reaction");if(oldImg)oldImg.remove();
   if(r.range?.reactionImage){const img=document.createElement("img");img.className="result-reaction";img.src=r.range.reactionImage;img.style.cssText="display:block;width:min(100%,420px);aspect-ratio:1/1;object-fit:cover;border-radius:20px;margin:20px auto";document.getElementById("finalText").after(img)}
   show("final");
+  renderAchievementTierResult();
   const status=document.getElementById("resultSaveStatus");if(status)status.textContent="Mengirim hasil…";
   saveResult();
 }
@@ -495,8 +588,8 @@ async function saveResult(){
   try{
     if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE_CONFIG);
     const db=firebase.firestore(),maxScore=quiz.questions.reduce((sum,q)=>sum+Math.max(0,...(q.options||[]).map(o=>Number(o.points)||0)),0);
-    const answers=answerLog.slice(0,100).map(a=>({question:String(a.question||"").slice(0,1000),selectedText:String(a.selectedText||"").slice(0,500),points:Number(a.points)||0,skipped:!!a.skipped,opinion:String(a.opinion||"").slice(0,1200),durationSeconds:Math.max(0,Math.floor(Number(a.durationSeconds)||0)),feedback:String(a.feedback||"").slice(0,1000),explanation:String(a.explanation||"").slice(0,1500)}));
-    await db.collection("quizResults").add({name:String(participantName||"Peserta").trim().slice(0,60),score:Number(score)||0,maxScore,questionCount:quiz.questions.length,durationSeconds:Math.max(0,Math.floor((Date.now()-quizStartedAt)/1000)),answers,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    const answers=answerLog.slice(0,100).map(a=>({question:String(a.question||"").slice(0,1000),selectedText:String(a.selectedText||"").slice(0,500),points:Number(a.points)||0,skipped:!!a.skipped,opinion:String(a.opinion||"").slice(0,1200),durationSeconds:Math.max(0,Math.floor(Number(a.durationSeconds)||0)),feedback:String(a.feedback||"").slice(0,1000),explanation:String(a.explanation||"").slice(0,1500),achievement:!!a.achievement,achievementName:String(a.achievementName||"").slice(0,100),achievementLevel:Math.max(0,Math.floor(Number(a.achievementLevel)||0))}));
+    await db.collection("quizResults").add({name:String(participantName||"Peserta").trim().slice(0,60),score:Number(score)||0,maxScore,questionCount:quiz.questions.length,achievementLevel:Math.max(0,Math.floor(Number(achievementLevel)||0)),durationSeconds:Math.max(0,Math.floor((Date.now()-quizStartedAt)/1000)),answers,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
     resultSent=true;if(status)status.textContent="✅ Hasil berhasil dikirim.";
   }catch(e){console.error("Gagal mengirim hasil:",e);if(status)status.textContent="❌ Hasil belum tersimpan: "+(e.message||"koneksi gagal")+". Catat skor ini dan coba lagi setelah memuat ulang."}
 }
@@ -519,7 +612,7 @@ async function loadQuizFromFirebase(){
     const db=firebase.firestore(),metaSnap=await db.collection("quizSettings").doc("main").get(),qs=await db.collection("quizQuestions").orderBy("order").get();
     if(!metaSnap.exists||qs.empty)return;
     const meta=metaSnap.data()||{},questions=qs.docs.map(d=>d.data()).sort((a,b)=>(a.order||0)-(b.order||0));
-    if(questions.length){quiz={eyebrow:meta.eyebrow||defaultQuiz.eyebrow,title:meta.title||defaultQuiz.title,subtitle:meta.subtitle||defaultQuiz.subtitle,display:meta.display||defaultQuiz.display,theme:meta.theme||{},resultRanges:Array.isArray(meta.resultRanges)&&meta.resultRanges.length===5?meta.resultRanges:defaultQuiz.resultRanges,questions};document.getElementById("eyebrow").textContent=quiz.eyebrow;document.getElementById("heroTitle").textContent=quiz.title;document.getElementById("heroSubtitle").textContent=quiz.subtitle;applyDisplayStyles(quiz.display)}
+    if(questions.length){quiz={eyebrow:meta.eyebrow||defaultQuiz.eyebrow,title:meta.title||defaultQuiz.title,subtitle:meta.subtitle||defaultQuiz.subtitle,display:meta.display||defaultQuiz.display,theme:meta.theme||{},resultRanges:Array.isArray(meta.resultRanges)&&meta.resultRanges.length===5?meta.resultRanges:defaultQuiz.resultRanges,achievementLevelRanges:Array.isArray(meta.achievementLevelRanges)&&meta.achievementLevelRanges.length===5?meta.achievementLevelRanges:defaultAchievementLevelRanges(),questions};document.getElementById("eyebrow").textContent=quiz.eyebrow;document.getElementById("heroTitle").textContent=quiz.title;document.getElementById("heroSubtitle").textContent=quiz.subtitle;applyDisplayStyles(quiz.display)}
   }catch(e){console.warn("Quiz online belum tersedia, memakai quiz bawaan.",e)}
 }
 document.getElementById("eyebrow").textContent=quiz.eyebrow;document.getElementById("heroTitle").textContent=quiz.title;document.getElementById("heroSubtitle").textContent=quiz.subtitle;renderLives();loadQuizFromFirebase();
@@ -531,7 +624,7 @@ document.getElementById("eyebrow").textContent=quiz.eyebrow;document.getElementB
 </style>
 <script>
 let soundEnabled=localStorage.getItem('quizSoundEnabled')!=='0';
-const customSounds={button:''};
+const customSounds={button:'',achievement:'',levelup:''};
 function updateSoundButton(){const b=document.getElementById('soundToggle');if(!b)return;b.textContent=soundEnabled?'🔊 Suara ON':'🔇 Suara OFF';b.classList.toggle('off',!soundEnabled);}
 function toggleSound(){soundEnabled=!soundEnabled;localStorage.setItem('quizSoundEnabled',soundEnabled?'1':'0');updateSoundButton();if(soundEnabled)playCustomSound('button');}
 function playCustomSound(key){if(!soundEnabled)return;const src=customSounds[String(key)];if(!src)return;try{const a=new Audio(src);a.volume=.9;a.play().catch(()=>{});}catch(e){}}
