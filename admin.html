@@ -33,7 +33,7 @@ button.danger{background:#c83f4d}
 .hidden{display:none!important}
 .login{max-width:520px;margin:10vh auto}
 .option{border:1px solid var(--line);border-radius:16px;padding:14px;margin:12px 0;background:#fafbfc}
-.qhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.qhead{display:flex;align-items:center;justify-content:space-between;gap:10px}.qhead h2{margin:0;flex:1}.remove-q{flex:0 0 auto!important;width:auto!important;min-width:0;padding:4px 8px!important;font-size:11px!important;line-height:1.2;border-radius:8px!important;opacity:.78}.remove-q:active{transform:scale(.97)}
 .preview{width:90px;height:90px;object-fit:cover;border-radius:12px;border:1px solid var(--line);background:#f1f2f5}
 .image-row{display:grid;grid-template-columns:1fr 100px;gap:10px;align-items:end}
 .small{font-size:12px;color:var(--muted)}
@@ -69,10 +69,6 @@ th,td{padding:10px;border-bottom:1px solid #eee;text-align:left;white-space:nowr
 @media(max-width:700px){
  body{padding:9px}.grid,.sound-grid{grid-template-columns:1fr}.style-row,.grid3{grid-template-columns:1fr 1fr}.top{top:5px}.tool{font-size:13px;padding:8px 9px}.live-title{font-size:23px}.image-row{grid-template-columns:1fr 85px}.preview{width:85px;height:85px}
 }
-.card{box-shadow:0 14px 36px rgba(20,18,45,.08)}.top{backdrop-filter:blur(14px)}button{transition:transform .15s,filter .15s}button:hover{filter:saturate(1.15);transform:translateY(-1px)}.video-box{border:1px solid #c9b8ff;background:linear-gradient(135deg,#f6f0ff,#fff7fb)}.answer-detail-row td{white-space:normal;background:#faf8ff}.answer-detail-row.hidden{display:none!important}.preview{object-fit:cover}
-/* clean white premium theme + compact question accordions */
-:root{--bg:#fff;--card:#fff;--dark:#202124;--muted:#747782;--line:#e8e8ec;--accent:#e85d68}
-body{background:#fff;color:#24252a} .top{border-radius:18px;box-shadow:0 8px 28px #15151b0b} .card{border-radius:18px;box-shadow:0 8px 28px #15151b08} button{border-radius:13px;transition:transform .18s ease,box-shadow .18s ease,background .18s ease} button:hover{transform:translateY(-1px);box-shadow:0 7px 18px #11111112} .qcard{padding:0;overflow:hidden}.qhead{padding:14px 16px;margin:0;background:#fff;position:sticky;top:132px;z-index:2;border-bottom:1px solid #f0f0f3}.qhead h2{font-size:16px;margin:0;flex:1}.qhead .toggle-q{background:#f5f5f7;color:#27282e;border:1px solid #e9e9ee;padding:8px 12px}.qbody{padding:16px}.qsummary{font-size:12px;color:#81838b;margin-top:4px}.option{border-radius:15px;background:#fcfcfd}
 </style>
 </head>
 <body>
@@ -243,9 +239,10 @@ body{background:#fff;color:#24252a} .top{border-radius:18px;box-shadow:0 8px 28p
       </div>
       <div class="card">
         <h2>📊 Hasil Peserta</h2>
+        <p class="small">Tekan Detail untuk melihat pilihan jawaban peserta per soal. Hasil lama yang tidak menyimpan answers akan diberi tanda belum tersedia.</p>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Nama</th><th>Skor</th><th>Maks.</th><th>Soal</th><th>Durasi</th><th>Waktu</th><th>Jawaban</th></tr></thead>
+            <thead><tr><th>Nama</th><th>Skor</th><th>Maks.</th><th>Soal</th><th>Durasi</th><th>Waktu</th><th>Detail</th></tr></thead>
             <tbody id="resultRows"></tbody>
           </table>
         </div>
@@ -282,9 +279,9 @@ body{background:#fff;color:#24252a} .top{border-radius:18px;box-shadow:0 8px 28p
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<script src="cloudinary-config.js"></script>
 <script>
-let auth=null,db=null,storage=null,currentData=null,resultsCache=[],pendingSounds={};
+let auth=null,db=null,currentData=null,resultsCache=[],pendingSounds={};
 const $=id=>document.getElementById(id);
 const ADMIN_UID="4ATUxzkPlFPxOeCd5ffAsVcVQRf2";
 const SOUND_KEYS=["button","0","1","2","3","4","5"];
@@ -388,11 +385,12 @@ function renderEditor(data){
 
 function addQuestionCard(q,qi,focus=true){
   const box=document.createElement("div");box.className="card qcard";
-  box.innerHTML=`<div class="qhead"><div style="flex:1;min-width:0"><h2>Soal ${qi+1}</h2><div class="qsummary">ABCDE · poin · gambar pilihan & reaksi</div></div><button type="button" class="toggle-q">Buka</button><button type="button" class="danger remove-q">Hapus</button></div><div class="qbody hidden"><label>Pertanyaan</label><textarea class="q-text">${esc(q.question||"")}</textarea><div class="options"></div></div>`;
+  box.innerHTML=`<div class="qhead"><h2>Soal ${qi+1}</h2><button type="button" class="danger remove-q" aria-label="Hapus soal ${qi+1}" title="Hapus soal">Hapus</button></div>
+    <label>Pertanyaan</label><textarea class="q-text">${esc(q.question||"")}</textarea>
+    <div class="options"></div>`;
   const opts=box.querySelector(".options");
   (q.options||[]).forEach((o,oi)=>addOptionCard(opts,o,oi));
-  box.querySelector(".toggle-q").onclick=()=>{const body=box.querySelector(".qbody"),open=body.classList.toggle("hidden")===false;box.querySelector(".toggle-q").textContent=open?"Tutup":"Buka"};
-  box.querySelector(".remove-q").onclick=()=>{if(document.querySelectorAll(".qcard").length<=1){alert("Minimal harus ada 1 soal.");return}box.remove();renumberQuestions()};
+  box.querySelector(".remove-q").onclick=()=>{if(document.querySelectorAll(".qcard").length<=1){alert("Minimal harus ada 1 soal.");return}if(!confirm(`Hapus Soal ${qi+1}? Perubahan baru tersimpan setelah menekan Simpan Quiz.`))return;box.remove();renumberQuestions()};
   $("questions").appendChild(box);
   if(focus)box.scrollIntoView({behavior:"smooth",block:"start"});
 }
@@ -509,20 +507,46 @@ $("cropApply").onclick=()=>{
   let sy=(br.top-ir.top)/syScale;
   sx=Math.max(0,Math.min(cropState.baseW-sidePx,sx));
   sy=Math.max(0,Math.min(cropState.baseH-sidePx,sy));
-  const c=document.createElement("canvas");c.width=420;c.height=420;
+  const c=document.createElement("canvas");c.width=600;c.height=600;
   const ctx=c.getContext("2d");ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality="high";
-  ctx.drawImage(cropState.img,sx,sy,sidePx,sidePx,0,0,420,420);
-  let data=c.toDataURL("image/jpeg",.68);
+  ctx.drawImage(cropState.img,sx,sy,sidePx,sidePx,0,0,600,600);
+  let data=c.toDataURL("image/jpeg",.76);
   // Keep each reaction compact enough for Firestore documents.
-  if(data.length>140000) data=c.toDataURL("image/jpeg",.48);
-  if(data.length>180000){alert("Gambar masih terlalu besar. Coba gambar yang lebih kecil.");return}
-  const targetInput=cropState.input, targetPreview=cropState.preview;
-  targetInput.value=data;
-  targetInput.dispatchEvent(new Event("input",{bubbles:true}));
-  targetInput.dispatchEvent(new Event("change",{bubbles:true}));
-  targetPreview.src=data;targetPreview.style.opacity=1;targetPreview.style.objectFit="cover";
+  if(data.length>190000){
+    data=c.toDataURL("image/jpeg",.60);
+  }
+  if(data.length>220000){alert("Gambar hasil crop masih terlalu besar. Pilih gambar yang lebih kecil.");return}
+  cropState.input.value=data;
+  cropState.input.dispatchEvent(new Event("input",{bubbles:true}));
+  cropState.preview.src=data;cropState.preview.style.opacity=1;
   $("cropModal").classList.remove("open");cropState=null;dragging=false;
 };
+
+
+async function cloudinaryUploadDataUrl(dataUrl){
+  const cfg=window.CLOUDINARY_CONFIG||{};
+  if(!cfg.cloudName||!cfg.uploadPreset||cfg.cloudName.startsWith("ISI_")||cfg.uploadPreset.startsWith("ISI_")){
+    throw new Error("Konfigurasi Cloudinary belum diisi. Isi cloudName dan uploadPreset di cloudinary-config.js.");
+  }
+  const response=await fetch(dataUrl);const blob=await response.blob();
+  const form=new FormData();form.append("file",blob,"quiz-image.jpg");form.append("upload_preset",cfg.uploadPreset);
+  const res=await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cfg.cloudName)}/image/upload`,{method:"POST",body:form});
+  const body=await res.json();if(!res.ok||!body.secure_url)throw new Error(body.error?.message||"Upload gambar ke Cloudinary gagal.");
+  return body.secure_url;
+}
+async function migrateImagesToCloudinary(data){
+  const cache=new Map();let count=0;
+  async function convert(value){
+    if(typeof value!=="string"||!value.startsWith("data:image/"))return value||"";
+    if(cache.has(value))return cache.get(value);
+    const url=await cloudinaryUploadDataUrl(value);cache.set(value,url);count++;return url;
+  }
+  for(const q of (data.questions||[]))for(const o of (q.options||[])){
+    o.image=await convert(o.image);o.reactionImage=await convert(o.reactionImage);
+  }
+  for(const r of (data.resultRanges||[]))r.reactionImage=await convert(r.reactionImage);
+  return count;
+}
 
 function collectData(){
   const questions=[...document.querySelectorAll(".qcard")].map((box,qi)=>({
@@ -535,9 +559,9 @@ function collectData(){
       explanation:op.querySelector(".o-explanation").value.trim(),
       reactionImage:op.querySelector(".o-reaction").value.trim(),
       videoEnabled:op.querySelector(".o-video-enabled")?.checked||false,
-      videoType:op.querySelector(".o-video-type")?.value||"url",
+      videoType:"url",
       videoUrl:op.querySelector(".o-video-url")?.value.trim()||"",
-      videoStoragePath:op.dataset.videoStoragePath||""
+      videoStoragePath:""
     }))
   }));
   return {eyebrow:$("eyebrow").value.trim(),title:$("title").value.trim(),subtitle:$("subtitle").value.trim(),display:readDisplayControls(),resultRanges:(currentData&&currentData.resultRanges)||defaultResultRanges(),questions};
@@ -604,50 +628,10 @@ function syncEditorIntoData(){
       points:safeNum(op.querySelector(".o-points").value,0),
       feedback:op.querySelector(".o-feedback").value,
       explanation:op.querySelector(".o-explanation").value,
-      reactionImage:op.querySelector(".o-reaction").value.trim(),
-      videoEnabled:op.querySelector(".o-video-enabled")?.checked||false,
-      videoType:op.querySelector(".o-video-type")?.value||"url",
-      videoUrl:op.querySelector(".o-video-url")?.value.trim()||"",
-      videoStoragePath:op.dataset.videoStoragePath||""
+      reactionImage:op.querySelector(".o-reaction").value
     }))
   }));
 }
-async function persistImageValue(value, path){
-  if(typeof value!=="string" || !value.startsWith("data:image/")) return value||"";
-  if(!storage || !auth || !auth.currentUser) throw new Error("Firebase Storage belum siap. Login admin ulang lalu coba lagi.");
-  const mime=(value.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/)||[])[1]||"image/jpeg";
-  const safePath=path.replace(/[^a-zA-Z0-9._/-]/g,"_");
-  const ref=storage.ref().child(`quiz-images/${auth.currentUser.uid}/${safePath}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`);
-  await ref.putString(value,"data_url",{contentType:mime});
-  return await ref.getDownloadURL();
-}
-async function persistQuizImages(data){
-  for(let qi=0;qi<(data.questions||[]).length;qi++){
-    const q=data.questions[qi];
-    for(let oi=0;oi<(q.options||[]).length;oi++){
-      const o=q.options[oi];
-      o.image=await persistImageValue(o.image,`q${qi+1}_o${oi+1}_choice.jpg`);
-      o.reactionImage=await persistImageValue(o.reactionImage,`q${qi+1}_o${oi+1}_reaction.jpg`);
-    }
-  }
-  for(let ri=0;ri<(data.resultRanges||[]).length;ri++){
-    data.resultRanges[ri].reactionImage=await persistImageValue(data.resultRanges[ri].reactionImage,`result_${ri+1}_reaction.jpg`);
-  }
-  // Reflect Storage URLs in editor fields so subsequent saves do not upload duplicates.
-  const cards=[...document.querySelectorAll(".qcard")];
-  data.questions.forEach((q,qi)=>{
-    const card=cards[qi]; if(!card)return;
-    const options=[...card.querySelectorAll(".option")];
-    (q.options||[]).forEach((o,oi)=>{
-      const op=options[oi]; if(!op)return;
-      const image=op.querySelector(".o-image"),reaction=op.querySelector(".o-reaction");
-      if(image){image.value=o.image||"";const preview=op.querySelector(".preview");if(preview){preview.src=o.image||"";preview.style.opacity=o.image?1:.3;}}
-      if(reaction){reaction.value=o.reactionImage||"";const preview=op.querySelector(".r-preview");if(preview){preview.src=o.reactionImage||"";preview.style.opacity=o.reactionImage?1:.3;}}
-    });
-  });
-  return data;
-}
-
 $("saveRanges").onclick=async()=>{
   try{
     syncEditorIntoData();
@@ -656,12 +640,11 @@ $("saveRanges").onclick=async()=>{
       message:box.querySelector(".range-message").value,
       reactionImage:box.querySelector(".range-reaction").value
     }));
-    for(let ri=0;ri<ranges.length;ri++) ranges[ri].reactionImage=await persistImageValue(ranges[ri].reactionImage,`result_${ri+1}_reaction.jpg`);
-    document.querySelectorAll(".range-reaction").forEach((el,ri)=>{if(ranges[ri])el.value=ranges[ri].reactionImage||"";});
     currentData.resultRanges=ranges;
+    const migratedImages=await migrateImagesToCloudinary({questions:[],resultRanges:ranges});
     await db.collection("quizSettings").doc("main").set({resultRanges:ranges},{merge:true});
     renderRangeEditor(currentData);
-    $("rangeStatus").textContent="Rentang hasil berhasil disimpan.";
+    $("rangeStatus").textContent=`Rentang hasil berhasil disimpan. Gambar dipindahkan: ${migratedImages}.`;
   }catch(e){$("rangeStatus").textContent="Gagal menyimpan: "+e.message}
 };
 $("resetRanges").onclick=()=>{
@@ -672,20 +655,24 @@ $("resetRanges").onclick=()=>{
 $("saveQuiz").onclick=async()=>{
   msg("Menyimpan quiz...");
   try{
-    let d=collectData();
-    if(!d.questions.length) throw new Error("Quiz harus memiliki minimal satu soal.");
-    if(d.questions.length>100) throw new Error("Maksimal 100 soal agar penyimpanan tetap aman.");
-    if(d.questions.some(q=>!q.question || !Array.isArray(q.options) || q.options.length!==5)) throw new Error("Setiap soal wajib punya pertanyaan dan tepat 5 pilihan A–E.");
-    msg("Mengunggah gambar dan menyimpan quiz...");
-    d=await persistQuizImages(d);
+    const d=collectData();
+    if(!d.questions.length)throw new Error("Tambahkan minimal satu soal.");
+    if(d.questions.length>100)throw new Error("Maksimal 100 soal agar penyimpanan tetap aman.");
+    for(let i=0;i<d.questions.length;i++){
+      if(!d.questions[i].question)throw new Error(`Teks Soal ${i+1} masih kosong.`);
+      if(d.questions[i].options.length!==5)throw new Error(`Soal ${i+1} harus memiliki tepat 5 pilihan.`);
+      if(d.questions[i].options.some(o=>!o.text))throw new Error(`Isi semua teks pilihan pada Soal ${i+1}.`);
+    }
+    msg("Memindahkan gambar Base64 ke Cloudinary (jika ada)...");
+    const migratedImages=await migrateImagesToCloudinary(d);
     const old=await db.collection("quizQuestions").get();
-    if(old.size+d.questions.length+1>450) throw new Error("Jumlah operasi terlalu besar. Batasi soal agar maksimal 450 operasi penyimpanan.");
+    if(old.size+d.questions.length+1>490)throw new Error("Jumlah perubahan terlalu banyak untuk satu penyimpanan aman. Kurangi soal lama atau hubungi admin teknis.");
     const batch=db.batch();
     old.docs.forEach(x=>batch.delete(x.ref));
     d.questions.forEach((q,i)=>batch.set(db.collection("quizQuestions").doc("q"+(i+1)),q));
     batch.set(db.collection("quizSettings").doc("main"),{eyebrow:d.eyebrow,title:d.title,subtitle:d.subtitle,display:d.display,resultRanges:d.resultRanges,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
     await batch.commit();
-    currentData=d;msg("✅ Quiz tersimpan. Gambar sudah dipindahkan ke Firebase Storage dan publik akan memuat versi terbaru.");
+    currentData=d;msg(`✅ Quiz tersimpan. Halaman peserta yang dibuka/di-refresh akan memuat versi terbaru. Gambar dipindahkan ke Cloudinary: ${migratedImages}.`);
   }catch(e){msg("❌ Gagal menyimpan quiz: "+e.message)}
 };
 $("saveAppearance").onclick=async()=>{msg("Menyimpan tampilan...");try{const d=readDisplayControls();await db.collection("quizSettings").doc("main").set({display:d,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});currentData.display=d;msg("✅ Tampilan teks tersimpan.");}catch(e){msg("❌ Gagal menyimpan tampilan: "+e.message)}};
@@ -716,6 +703,16 @@ $("clearSounds").onclick=async()=>{
   catch(e){soundMsg("❌ Gagal menghapus suara: "+e.message)}
 };
 
+function showAnswerDetail(id){
+  const x=resultsCache.find(r=>r.id===id);if(!x)return;
+  $("answerDetailTitle").textContent=`Jawaban: ${x.name||"Peserta"}`;
+  const answers=Array.isArray(x.answers)?x.answers:[];
+  if(!answers.length){$("answerDetailBody").innerHTML='<p>Data pilihan jawaban tidak tersedia untuk hasil lama ini. Hasil baru akan menyimpan pilihan per soal setelah versi publik terbaru dipasang.</p>';}
+  else $("answerDetailBody").innerHTML=answers.map((a,i)=>`<div class="option"><h3>Soal ${Number(a.order)||i+1}: ${esc(a.question||"(soal kosong)")}</h3><p><b>Pilihan peserta:</b> ${esc(a.selectedLabel||"")} — ${esc(a.selectedText||"(tidak tercatat)")}</p><p><b>Poin diperoleh:</b> ${Number(a.pointsEarned)||0}</p><p><b>Durasi soal:</b> ${Math.max(0,Number(a.durationSeconds)||0)} detik</p>${a.selectedImage?`<img class="preview" src="${esc(a.selectedImage)}" alt="Gambar pilihan peserta">`:""}<p><b>Feedback:</b> ${esc(a.feedback||"-")}</p><p><b>Penjelasan:</b> ${esc(a.explanation||"-")}</p></div>`).join("");
+  $("answerDetailModal").classList.add("open");
+}
+$("closeAnswerDetail").onclick=()=>$("answerDetailModal").classList.remove("open");
+$("answerDetailModal").addEventListener("click",e=>{if(e.target.id==="answerDetailModal")$("answerDetailModal").classList.remove("open")});
 async function loadResults(){
   $("resultRows").innerHTML='<tr><td colspan="7">Memuat...</td></tr>';
   try{
@@ -723,14 +720,13 @@ async function loadResults(){
     resultsCache=s.docs.map(d=>({id:d.id,...d.data()}));
     $("resultRows").innerHTML=resultsCache.map(x=>{
       const sec=Math.max(0,Number(x.durationSeconds)||0);
-      return `<tr><td>${esc(x.name)}</td><td>${Number(x.score)||0}</td><td>${Number(x.maxScore)||0}</td><td>${Number(x.questionCount)||0}</td><td>${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")}</td><td>${x.createdAt?.toDate?x.createdAt.toDate().toLocaleString("id-ID"):"-"}</td><td><button class="secondary answer-detail-btn" data-result="${esc(x.id)}">Lihat</button></td></tr><tr class="answer-detail-row hidden" id="detail-${esc(x.id)}"><td colspan="7">${Array.isArray(x.answers)&&x.answers.length?x.answers.map((a,i)=>`<div style="white-space:normal;min-width:260px;padding:8px 0"><b>Soal ${i+1}:</b> ${esc(a.question)}<br><b>Dipilih:</b> ${esc(a.selectedText||"-")} · ${Number(a.points)||0} poin<br><small>Waktu: ${Math.max(0,Number(a.durationSeconds)||0)} detik</small></div>`).join(""):'<span>Detail jawaban belum tersedia untuk percobaan lama.</span>'}</td></tr>`;
+      return `<tr><td>${esc(x.name)}</td><td>${Number(x.score)||0}</td><td>${Number(x.maxScore)||0}</td><td>${Number(x.questionCount)||0}</td><td>${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")}</td><td>${x.createdAt?.toDate?x.createdAt.toDate().toLocaleString("id-ID"):"-"}</td><td><button class="secondary" onclick="showAnswerDetail('${x.id}')">Lihat detail</button></td></tr>`;
     }).join("")||'<tr><td colspan="7">Belum ada hasil.</td></tr>';
-    document.querySelectorAll(".answer-detail-btn").forEach(b=>b.onclick=()=>{const row=document.getElementById("detail-"+b.dataset.result);if(row)row.classList.toggle("hidden")});
   }catch(e){$("resultRows").innerHTML='<tr><td colspan="7">❌ Gagal memuat hasil: '+esc(e.message)+'</td></tr>'}
 }
 $("refreshResults").onclick=loadResults;
 $("exportResults").onclick=()=>{
-  const rows=[["Nama","Skor","Maksimal","Jumlah soal","Durasi detik","Waktu kirim"],...resultsCache.map(x=>[x.name,x.score,x.maxScore,x.questionCount,x.durationSeconds,x.createdAt?.toDate?x.createdAt.toDate().toISOString():""])];
+  const rows=[["Nama","Skor","Maksimal","Jumlah soal","Durasi detik","Waktu kirim","Jawaban per soal"],...resultsCache.map(x=>[x.name,x.score,x.maxScore,x.questionCount,x.durationSeconds,x.createdAt?.toDate?x.createdAt.toDate().toISOString():"",JSON.stringify(x.answers||[])])];
   const csv=rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\n");
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="hasil-quiz-stive.csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500);
 };
@@ -746,7 +742,7 @@ $("logoutBtn").onclick=()=>auth.signOut();
 
 try{
   firebase.initializeApp(window.FIREBASE_CONFIG);
-  auth=firebase.auth();db=firebase.firestore();storage=firebase.storage();
+  auth=firebase.auth();db=firebase.firestore();
   auth.onAuthStateChanged(async user=>{
     if(user&&user.uid===ADMIN_UID){
       $("loginView").classList.add("hidden");$("appView").classList.remove("hidden");
@@ -758,5 +754,13 @@ try{
   });
 }catch(e){loginMsg("❌ Firebase gagal dimuat: "+e.message)}
 </script>
+
+<div id="answerDetailModal" class="crop-modal" style="z-index:150">
+  <div class="crop-box" style="width:min(850px,100%);max-height:88vh;overflow:auto">
+    <div class="qhead"><h2 id="answerDetailTitle">Detail Jawaban</h2><button class="secondary" id="closeAnswerDetail">Tutup</button></div>
+    <div id="answerDetailBody"></div>
+  </div>
+</div>
+
 </body>
 </html>
