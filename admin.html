@@ -107,8 +107,33 @@ input,textarea,select{background:#25262b;color:#f4f4f5;border-color:#45464d}
 .settings-arrow{font-size:26px;color:#ddd;text-align:right}
 .top:before{background:repeating-linear-gradient(90deg,#050505 0 18px,#f1f1f1 18px 36px);opacity:1}
 .video-box{background:#222328;border-color:#44454c}
-/* Fix v5.4: header soal tidak menempel/menimpa teks editor saat scroll */
+/* Fix v5.5: panel navigasi admin tidak menutupi editor pertanyaan maupun pilihan A/B/C/D/E saat scroll */
+.top{position:relative!important;top:auto!important;z-index:1!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.qcard{position:relative;overflow:visible!important;scroll-margin-top:12px}
+.qhead{position:relative!important;top:auto!important;z-index:auto!important}
+.qbody{position:relative;z-index:auto;display:block}
+.qbody.hidden{display:none!important}
+.qbody textarea,.qbody input,.qbody select,.qbody .option{position:relative;z-index:auto}
+
 .qcard{overflow:visible}.qhead{position:relative!important;top:auto!important;z-index:1!important;flex-wrap:wrap}.qhead>div{min-width:0}.qbody{position:relative;clear:both;background:var(--card)}
+
+/* v5.6: layout fix for EVERY question accordion (header, question field, and A/B/C/D/E options) */
+#questions{display:flex;flex-direction:column;gap:14px;min-width:0}
+#questions>.qcard{display:block;position:static!important;float:none!important;clear:both;width:100%;min-width:0;height:auto!important;overflow:visible!important;contain:initial!important;isolation:isolate}
+#questions>.qcard>.qhead{display:flex!important;position:static!important;inset:auto!important;float:none!important;transform:none!important;width:100%;min-height:64px;align-items:center;flex-wrap:nowrap;gap:8px;z-index:auto!important;margin:0;padding:12px 14px;box-sizing:border-box}
+#questions>.qcard>.qhead>div{flex:1 1 auto!important;min-width:0!important;overflow-wrap:anywhere}
+#questions>.qcard>.qhead h2{display:block;position:static!important;white-space:normal;overflow-wrap:anywhere}
+#questions>.qcard>.qhead button{position:static!important;flex:0 0 auto;transform:none;white-space:nowrap}
+#questions>.qcard>.qbody{display:block;position:static!important;float:none!important;clear:both;width:100%;height:auto!important;min-width:0;overflow:visible!important;transform:none!important;padding:14px;background:var(--card);box-sizing:border-box}
+#questions>.qcard>.qbody.hidden{display:none!important}
+#questions .q-text{display:block;width:100%;min-height:96px;position:static!important}
+#questions .options{display:flex;flex-direction:column;gap:12px;width:100%;min-width:0;margin-top:12px}
+#questions .option{display:block;position:static!important;float:none!important;width:100%;min-width:0;height:auto!important;overflow:visible!important;transform:none!important;margin:0;padding:12px;box-sizing:border-box}
+#questions .option label{position:static!important;display:block;white-space:normal}
+#questions .option input,#questions .option textarea,#questions .option select{position:static!important;display:block;max-width:100%;min-width:0}
+#questions .option .grid3,#questions .option .image-row{min-width:0}
+@media(max-width:520px){#questions>.qcard>.qhead{flex-wrap:wrap;align-items:center}#questions>.qcard>.qhead>div{flex-basis:100%!important}#questions>.qcard>.qhead button{flex:1 1 auto}#questions>.qcard>.qbody{padding:11px}#questions .option{padding:10px}}
+
 </style>
 </head>
 <body>
@@ -339,8 +364,33 @@ input,textarea,select{background:#25262b;color:#f4f4f5;border-color:#45464d}
 .video-box input[type="text"],.video-box input:not([type]),.video-box select{width:100%;padding:11px;border:1px solid #ddd;border-radius:10px;box-sizing:border-box}
 .video-box input[type="checkbox"]{width:auto}
 .video-box .small{font-size:12px;color:#7f8591;line-height:1.45}
-/* Fix v5.4: header soal tidak menempel/menimpa teks editor saat scroll */
+/* Fix v5.5: panel navigasi admin tidak menutupi editor pertanyaan maupun pilihan A/B/C/D/E saat scroll */
+.top{position:relative!important;top:auto!important;z-index:1!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.qcard{position:relative;overflow:visible!important;scroll-margin-top:12px}
+.qhead{position:relative!important;top:auto!important;z-index:auto!important}
+.qbody{position:relative;z-index:auto;display:block}
+.qbody.hidden{display:none!important}
+.qbody textarea,.qbody input,.qbody select,.qbody .option{position:relative;z-index:auto}
+
 .qcard{overflow:visible}.qhead{position:relative!important;top:auto!important;z-index:1!important;flex-wrap:wrap}.qhead>div{min-width:0}.qbody{position:relative;clear:both;background:var(--card)}
+
+/* v5.6: layout fix for EVERY question accordion (header, question field, and A/B/C/D/E options) */
+#questions{display:flex;flex-direction:column;gap:14px;min-width:0}
+#questions>.qcard{display:block;position:static!important;float:none!important;clear:both;width:100%;min-width:0;height:auto!important;overflow:visible!important;contain:initial!important;isolation:isolate}
+#questions>.qcard>.qhead{display:flex!important;position:static!important;inset:auto!important;float:none!important;transform:none!important;width:100%;min-height:64px;align-items:center;flex-wrap:nowrap;gap:8px;z-index:auto!important;margin:0;padding:12px 14px;box-sizing:border-box}
+#questions>.qcard>.qhead>div{flex:1 1 auto!important;min-width:0!important;overflow-wrap:anywhere}
+#questions>.qcard>.qhead h2{display:block;position:static!important;white-space:normal;overflow-wrap:anywhere}
+#questions>.qcard>.qhead button{position:static!important;flex:0 0 auto;transform:none;white-space:nowrap}
+#questions>.qcard>.qbody{display:block;position:static!important;float:none!important;clear:both;width:100%;height:auto!important;min-width:0;overflow:visible!important;transform:none!important;padding:14px;background:var(--card);box-sizing:border-box}
+#questions>.qcard>.qbody.hidden{display:none!important}
+#questions .q-text{display:block;width:100%;min-height:96px;position:static!important}
+#questions .options{display:flex;flex-direction:column;gap:12px;width:100%;min-width:0;margin-top:12px}
+#questions .option{display:block;position:static!important;float:none!important;width:100%;min-width:0;height:auto!important;overflow:visible!important;transform:none!important;margin:0;padding:12px;box-sizing:border-box}
+#questions .option label{position:static!important;display:block;white-space:normal}
+#questions .option input,#questions .option textarea,#questions .option select{position:static!important;display:block;max-width:100%;min-width:0}
+#questions .option .grid3,#questions .option .image-row{min-width:0}
+@media(max-width:520px){#questions>.qcard>.qhead{flex-wrap:wrap;align-items:center}#questions>.qcard>.qhead>div{flex-basis:100%!important}#questions>.qcard>.qhead button{flex:1 1 auto}#questions>.qcard>.qbody{padding:11px}#questions .option{padding:10px}}
+
 </style>
 <script src="firebase-config.js"></script>
 <script src="cloudinary-config.js"></script>
