@@ -72,13 +72,13 @@ th,td{padding:10px;border-bottom:1px solid #eee;text-align:left;white-space:nowr
 .card{box-shadow:0 14px 36px rgba(20,18,45,.08)}.top{backdrop-filter:blur(14px)}button{transition:transform .15s,filter .15s}button:hover{filter:saturate(1.15);transform:translateY(-1px)}.video-box{border:1px solid #c9b8ff;background:linear-gradient(135deg,#f6f0ff,#fff7fb)}.answer-detail-row td{white-space:normal;background:#faf8ff}.answer-detail-row.hidden{display:none!important}.preview{object-fit:cover}
 /* clean white premium theme + compact question accordions */
 :root{--bg:#fff;--card:#fff;--dark:#202124;--muted:#747782;--line:#e8e8ec;--accent:#e85d68}
-body{background:#fff;color:#24252a} .top{border-radius:18px;box-shadow:0 8px 28px #15151b0b} .card{border-radius:18px;box-shadow:0 8px 28px #15151b08} button{border-radius:13px;transition:transform .18s ease,box-shadow .18s ease,background .18s ease} button:hover{transform:translateY(-1px);box-shadow:0 7px 18px #11111112} .qcard{padding:0;overflow:hidden}.qhead{padding:14px 16px;margin:0;background:#fff;position:sticky;top:132px;z-index:2;border-bottom:1px solid #f0f0f3}.qhead h2{font-size:16px;margin:0;flex:1}.qhead .toggle-q{background:#f5f5f7;color:#27282e;border:1px solid #e9e9ee;padding:8px 12px}.qhead .remove-q{margin-left:auto;flex:0 0 auto;padding:5px 8px;font-size:11px;line-height:1.1;border-radius:9px;min-width:0}.qhead{gap:7px}.qhead .toggle-q{padding:7px 9px;font-size:12px}.qbody{padding:16px}.qsummary{font-size:12px;color:#81838b;margin-top:4px}.option{border-radius:15px;background:#fcfcfd}
+body{background:#fff;color:#24252a} .top{border-radius:18px;box-shadow:0 8px 28px #15151b0b} .card{border-radius:18px;box-shadow:0 8px 28px #15151b08} button{border-radius:13px;transition:transform .18s ease,box-shadow .18s ease,background .18s ease} button:hover{transform:translateY(-1px);box-shadow:0 7px 18px #11111112} .qcard{padding:0;overflow:hidden}.qhead{padding:14px 16px;margin:0;background:#fff;position:relative;top:auto;z-index:1;border-bottom:1px solid #f0f0f3}.qhead h2{font-size:16px;margin:0;flex:1}.qhead .toggle-q{background:#f5f5f7;color:#27282e;border:1px solid #e9e9ee;padding:8px 12px}.qhead .remove-q{margin-left:auto;flex:0 0 auto;padding:5px 8px;font-size:11px;line-height:1.1;border-radius:9px;min-width:0}.qhead{gap:7px}.qhead .toggle-q{padding:7px 9px;font-size:12px}.qbody{padding:16px}.qsummary{font-size:12px;color:#81838b;margin-top:4px}.option{border-radius:15px;background:#fcfcfd}
 
 /* Chess-inspired accent: subtle squares, without overpowering the existing light theme */
 .top:before{content:"";display:block;height:5px;width:100%;margin:-12px 0 10px;border-radius:12px;background:repeating-linear-gradient(90deg,#202124 0 14px,#fff 14px 28px);opacity:.82}
 .remove-q{background:#fff!important;color:#a72f3b!important;border:1px solid #f0c9cd!important;min-width:0!important;padding:5px 8px!important;font-size:11px!important}
 .status{overflow-wrap:anywhere}.status:empty{display:none}
-@media(max-width:520px){.card{padding:13px}.qhead{top:120px;padding:10px}.brand{font-size:18px}.actions button{flex:1 1 auto}.tool{font-size:12px}}
+@media(max-width:520px){.card{padding:13px}.qhead{top:auto;padding:10px}.brand{font-size:18px}.actions button{flex:1 1 auto}.tool{font-size:12px}}
 /* Tema catur: hitam lebih dominan, dengan kotak terang sebagai aksen */
 :root{--bg:#111214;--card:#1b1c20;--dark:#f4f4f5;--muted:#b7b8bf;--line:#34353b;--accent:#e85d68}
 html,body{background:#111214;color:#f4f4f5}
@@ -107,6 +107,8 @@ input,textarea,select{background:#25262b;color:#f4f4f5;border-color:#45464d}
 .settings-arrow{font-size:26px;color:#ddd;text-align:right}
 .top:before{background:repeating-linear-gradient(90deg,#050505 0 18px,#f1f1f1 18px 36px);opacity:1}
 .video-box{background:#222328;border-color:#44454c}
+/* Fix v5.4: header soal tidak menempel/menimpa teks editor saat scroll */
+.qcard{overflow:visible}.qhead{position:relative!important;top:auto!important;z-index:1!important;flex-wrap:wrap}.qhead>div{min-width:0}.qbody{position:relative;clear:both;background:var(--card)}
 </style>
 </head>
 <body>
@@ -337,6 +339,8 @@ input,textarea,select{background:#25262b;color:#f4f4f5;border-color:#45464d}
 .video-box input[type="text"],.video-box input:not([type]),.video-box select{width:100%;padding:11px;border:1px solid #ddd;border-radius:10px;box-sizing:border-box}
 .video-box input[type="checkbox"]{width:auto}
 .video-box .small{font-size:12px;color:#7f8591;line-height:1.45}
+/* Fix v5.4: header soal tidak menempel/menimpa teks editor saat scroll */
+.qcard{overflow:visible}.qhead{position:relative!important;top:auto!important;z-index:1!important;flex-wrap:wrap}.qhead>div{min-width:0}.qbody{position:relative;clear:both;background:var(--card)}
 </style>
 <script src="firebase-config.js"></script>
 <script src="cloudinary-config.js"></script>
