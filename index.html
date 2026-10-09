@@ -349,15 +349,15 @@ function show(id){["home","quiz","final"].forEach(x=>document.getElementById(x).
 function resetLives(){participantLives=MAX_LIVES;renderLives()}
 function renderLives(){const el=document.getElementById("livesBar");if(!el)return;const heart=(filled)=>`<span class="heart" aria-label="${filled?"Nyawa tersedia":"Nyawa habis"}"><svg viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path d="M2 1h4v1h4V1h4v1h1v4h-1v2h-1v2h-2v2H9v1H7v-1H5v-2H3V8H2V6H1V2h1z" fill="${filled?"#ef3340":"#fff"}" stroke="${filled?"#292929":"#d94b55"}" stroke-width=".8"/><path d="M3 2h3v1h4V2h3v3h-1v2h-1v2H9v2H7v-1H5V8H4V6H3z" fill="${filled?"#ef3340":"#fff"}"/><path d="M3 2h3v1H4v2H3z" fill="${filled?"#ff7b83":"#fff"}"/></svg></span>`;el.innerHTML=`Nyawa ${Array.from({length:MAX_LIVES},(_,i)=>heart(i<participantLives)).join("")}`;}
 function showPoints(points){
-  const el=document.getElementById("pointsPop");if(!el)return;
-  el.textContent=points>0?`+${points} poin 🎉`:"0 poin • -1 ❤️";el.classList.remove("hidden");
+  const el=document.getElementById("pointsPop");if(el){el.textContent="";el.classList.add("hidden");}
+  // Gunakan hanya animasi poin kuning di tengah layar; jangan tampilkan toast teks yang menetap.
   document.querySelectorAll(".points-burst,.points-spark").forEach(n=>n.remove());
   const burst=document.createElement("div");burst.className="points-burst";burst.setAttribute("aria-live","polite");
   burst.innerHTML=points>0?`+${points}<small>POIN DIDAPAT! ✨</small>`:`0<small>POIN • COBA LAGI 💪</small>`;
   document.body.appendChild(burst);setTimeout(()=>burst.remove(),1050);
   if(points>0){for(let i=0;i<12;i++){const spark=document.createElement("i");spark.className="points-spark";const angle=(Math.PI*2*i/12)+(Math.random()*.18),distance=55+Math.random()*70;spark.style.setProperty("--sx",`${Math.cos(angle)*distance}px`);spark.style.setProperty("--sy",`${Math.sin(angle)*distance}px`);spark.style.background=["#ffdc45","#7cff6b","#ff7eb6","#66d9ff"][i%4];document.body.appendChild(spark);setTimeout(()=>spark.remove(),800)}}
 }
-function hidePoints(){document.getElementById("pointsPop")?.classList.add("hidden")}
+function hidePoints(){const el=document.getElementById("pointsPop");if(el){el.textContent="";el.classList.add("hidden")}}
 function startFreshQuiz(){current=0;score=0;selected=null;checked=false;resultSent=false;answerLog=[];achievementLevel=0;renderAchievementHud();resetLives();quizStartedAt=Date.now();questionStartedAt=quizStartedAt;show("quiz");renderQuestion()}
 function startQuiz(){
   if(!participantName){document.getElementById("nameModal").classList.remove("hidden");setTimeout(()=>document.getElementById("participantName").focus(),50);return}

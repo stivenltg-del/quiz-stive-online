@@ -134,6 +134,19 @@ input,textarea,select{background:#25262b;color:#f4f4f5;border-color:#45464d}
 #questions .option .grid3,#questions .option .image-row{min-width:0}
 @media(max-width:520px){#questions>.qcard>.qhead{flex-wrap:wrap;align-items:center}#questions>.qcard>.qhead>div{flex-basis:100%!important}#questions>.qcard>.qhead button{flex:1 1 auto}#questions>.qcard>.qbody{padding:11px}#questions .option{padding:10px}}
 
+
+/* v5.7: prevent the navigation/header from covering question editor labels on every question */
+.top{position:relative!important;top:auto!important;z-index:2!important}
+.qcard{position:relative;scroll-margin-top:12px;overflow:visible!important}
+.qhead{position:relative!important;top:auto!important;z-index:1!important;display:flex;align-items:center;flex-wrap:nowrap;min-width:0}
+.qhead>div:first-child{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+.qhead h2{display:block;white-space:normal;overflow-wrap:anywhere;line-height:1.25;margin:0}
+.qsummary{display:block;white-space:normal;overflow-wrap:anywhere;line-height:1.35}
+.qhead .toggle-q,.qhead .remove-q{flex:0 0 auto;position:relative;z-index:2}
+.qbody{position:relative;z-index:0;min-width:0;overflow:visible!important}
+.qbody>label:first-child{display:block;clear:both;margin-top:0}
+.qbody .q-text,.qbody .option,.qbody .option label,.qbody .option input{position:relative;z-index:0}
+@media(max-width:520px){.qhead{gap:6px;padding:10px}.qhead h2{font-size:15px}.qsummary{font-size:11px}.qhead .toggle-q{padding:7px;font-size:12px}}
 </style>
 </head>
 <body>
