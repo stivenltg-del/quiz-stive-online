@@ -408,7 +408,7 @@ function showAchievement(o){
   toast.querySelector(".achievement-toast-title").textContent=o.achievementTitle||"Achievement Made!";
   toast.querySelector(".achievement-toast-name").textContent=o.achievementName||"Achievement unlocked!";
   toast.classList.remove("show");void toast.offsetWidth;toast.classList.add("show");
-  clearTimeout(toast._hideTimer);toast._hideTimer=setTimeout(()=>toast.classList.remove("show"),3000);
+  clearTimeout(toast._hideTimer);toast._hideTimer=setTimeout(()=>toast.classList.remove("show"),6500);
   if(hud){
     const hr=hud.getBoundingClientRect(),source=document.querySelector(".option.selected"),sr=source?.getBoundingClientRect();
     const sx=sr?sr.left+sr.width/2:innerWidth*.5,sy=sr?sr.top+sr.height/2:innerHeight*.52;
@@ -457,30 +457,33 @@ function selectOption(i){
   if(checked)return;
   selected=i;
   document.querySelectorAll(".option").forEach((el,n)=>el.classList.toggle("selected",n===i));
-  const o=randomizedOptions[i]||{};
-  document.querySelector(".selected-video-preview")?.remove();
+  document.querySelector("#options .selected-video-preview")?.remove();
+  document.querySelector("#options .video-hint-label")?.remove();
   closeSpecialVideo();
-  if(o.videoEnabled && o.videoUrl){
-    const box=document.createElement("div");box.className="selected-video-preview";
-    const rawUrl=String(o.videoUrl||"").trim();
-    const tid=getTikTokId(rawUrl);
-    const yt=rawUrl.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
-    const vm=rawUrl.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-    const gd=rawUrl.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:[^#]*&)?id=)([A-Za-z0-9_-]+)/);
-    if(tid||yt||vm||gd){
-      const frame=document.createElement("iframe");frame.title="Video reaction";
-      frame.src=tid?`https://www.tiktok.com/player/v1/${tid}?controls=1&description=0&music_info=0`:yt?`https://www.youtube-nocookie.com/embed/${yt[1]}?playsinline=1`:vm?`https://player.vimeo.com/video/${vm[1]}`:`https://drive.google.com/file/d/${gd[1]}/preview`;
-      frame.allow="fullscreen; autoplay; encrypted-media; picture-in-picture";frame.allowFullscreen=true;
-      box.innerHTML='<div class="inline-video"></div><p style="text-align:center;font-size:13px;opacity:.75">Video reaction</p>';box.querySelector(".inline-video").appendChild(frame);
-    }
-    else {
-      const video=document.createElement("video");video.controls=true;video.playsInline=true;video.preload="metadata";video.src=rawUrl;video.setAttribute("controlsList","nodownload");
-      video.onerror=()=>{const note=document.createElement("p");note.style.cssText="padding:10px;text-align:center;color:#b42332;font-size:13px";note.textContent="Video tidak dapat diputar. Pastikan link bisa dibuka publik dan berupa file video langsung (.mp4/.webm/.mov), bukan halaman preview.";box.appendChild(note)};
-      box.appendChild(video);video.style.cssText="display:block;width:min(100%,460px);max-height:70vh;margin:18px auto;border-radius:18px;background:#000";
-    }
-    document.getElementById("options").appendChild(box);
-  }
+  const o=randomizedOptions[i]||{};
+  // Mode adminPreview/onSelect lama sengaja tidak menampilkan petunjuk di halaman publik.
+  // Video petunjuk hanya dapat dipratinjau melalui panel admin.
 }
+function createSelectedVideoBox(o){
+  const box=document.createElement("div");box.className="selected-video-preview";
+  const rawUrl=String(o.videoUrl||"").trim();
+  const tid=getTikTokId(rawUrl);
+  const yt=rawUrl.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  const vm=rawUrl.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  const gd=rawUrl.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:[^#]*&)?id=)([A-Za-z0-9_-]+)/);
+  if(tid||yt||vm||gd){
+    const frame=document.createElement("iframe");frame.title="Video reaction";
+    frame.src=tid?`https://www.tiktok.com/player/v1/${tid}?controls=1&description=0&music_info=0`:yt?`https://www.youtube-nocookie.com/embed/${yt[1]}?playsinline=1`:vm?`https://player.vimeo.com/video/${vm[1]}`:`https://drive.google.com/file/d/${gd[1]}/preview`;
+    frame.allow="fullscreen; autoplay; encrypted-media; picture-in-picture";frame.allowFullscreen=true;
+    const wrap=document.createElement("div");wrap.className="inline-video";wrap.appendChild(frame);box.appendChild(wrap);
+  } else {
+    const video=document.createElement("video");video.controls=true;video.playsInline=true;video.preload="metadata";video.src=rawUrl;video.setAttribute("controlsList","nodownload");
+    video.onerror=()=>{const note=document.createElement("p");note.style.cssText="padding:10px;text-align:center;color:#b42332;font-size:13px";note.textContent="Video tidak dapat diputar. Pastikan link publik dan berupa file video langsung.";box.appendChild(note)};
+    video.style.cssText="display:block;width:min(100%,460px);max-height:70vh;margin:18px auto;border-radius:18px;background:#000";box.appendChild(video);
+  }
+  return box;
+}
+
 function ensureVideoModal(){
   let m=document.getElementById('videoModal');
   if(m)return m;
@@ -542,6 +545,19 @@ function checkAnswer(){
   const f=document.getElementById("feedback");
   const reaction=(!o.videoEnabled && o.reactionImage)?`<img class="reaction-image" src="${escapeAttr(o.reactionImage)}" onerror="this.style.display='none'">`:"";
   f.innerHTML=`<h2>${escapeHTML(o.feedback||"")}</h2><p>${escapeHTML(o.explanation||"")}</p>${reaction}`;f.classList.remove("hidden");
+  if(o.videoEnabled&&o.videoUrl){
+    const mode=o.videoShowMode||"afterLock";
+    // Hilangkan preview petunjuk dari daftar opsi setelah jawaban dikunci.
+    document.querySelector("#options .selected-video-preview")?.remove();
+    document.querySelector("#options .video-hint-label")?.remove();
+    if(mode==="afterLock"){
+      const label=document.createElement("p");label.textContent="🎬 Video Reaction";label.style.cssText="text-align:center;font-weight:800;margin:16px 0 4px";f.appendChild(label);
+      f.appendChild(createSelectedVideoBox(o));
+    }else if(mode==="manual"){
+      const videoBtn=document.createElement("button");videoBtn.type="button";videoBtn.className="secondary";videoBtn.textContent="▶ Tonton Video Reaction";videoBtn.style.cssText="display:block;margin:16px auto;padding:12px 18px;border-radius:12px;font-weight:800";
+      videoBtn.addEventListener("click",()=>{f.querySelector(".selected-video-preview")?.remove();const box=createSelectedVideoBox(o);f.appendChild(box);videoBtn.textContent="↻ Putar Video Reaction Lagi";});f.appendChild(videoBtn);
+    }
+  }
   if(participantLives<=0){
     f.innerHTML=`<h2>💔 Darah habis!</h2><p>Quiz akan dimulai ulang dari awal.</p>`;
     document.getElementById("nextBtn").classList.add("hidden");
@@ -568,6 +584,7 @@ function nextQuestion(){
 function showSkipTroll(){
   let layer=document.getElementById("skipTrollOverlay");if(!layer){layer=document.createElement("div");layer.id="skipTrollOverlay";layer.innerHTML='<div class="skip-troll-card"><div class="skip-troll-title">Balik Luh!</div><img id="skipTrollImage" alt="Troll reaction"><p>Belum boleh kabur 😈</p></div>';document.body.appendChild(layer)}
   const img=layer.querySelector("img");img.src=window.QUIZ_TROLL_IMAGE||"";layer.classList.remove("out");layer.classList.add("show");
+  playCustomSound("skipTroll");
   window.setTimeout(()=>{layer.classList.add("out");window.setTimeout(()=>{layer.classList.remove("show","out");},360)},1450);
 }
 function skipQuestion(){
@@ -624,7 +641,7 @@ document.getElementById("eyebrow").textContent=quiz.eyebrow;document.getElementB
 </style>
 <script>
 let soundEnabled=localStorage.getItem('quizSoundEnabled')!=='0';
-const customSounds={button:'',achievement:'',levelup:''};
+const customSounds={button:'',achievement:'',levelup:'',skipTroll:''};
 function updateSoundButton(){const b=document.getElementById('soundToggle');if(!b)return;b.textContent=soundEnabled?'🔊 Suara ON':'🔇 Suara OFF';b.classList.toggle('off',!soundEnabled);}
 function toggleSound(){soundEnabled=!soundEnabled;localStorage.setItem('quizSoundEnabled',soundEnabled?'1':'0');updateSoundButton();if(soundEnabled)playCustomSound('button');}
 function playCustomSound(key){if(!soundEnabled)return;const src=customSounds[String(key)];if(!src)return;try{const a=new Audio(src);a.volume=.9;a.play().catch(()=>{});}catch(e){}}

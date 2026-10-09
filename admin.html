@@ -285,7 +285,7 @@ input,textarea,select{background:#25262b;color:#f4f4f5;border-color:#45464d}
       <button class="secondary back" data-view="editor">← Kembali ke Edit Quiz</button>
       <div class="card">
         <h2>🔊 Pengaturan Suara</h2>
-        <p class="small">Setiap suara disimpan terpisah agar tidak membebani satu dokumen Firestore. Maksimal 600 KB per file.</p>
+        <p class="small">Setiap suara disimpan terpisah agar tidak membebani satu dokumen Firestore. Maksimal 600 KB per file. Termasuk suara khusus saat Achievement muncul, XP naik level, dan tombol Lewati memunculkan troll.</p>
         <div class="sound-grid" id="soundGrid"></div>
         <div class="actions">
           <button id="saveSounds">💾 Simpan Semua Suara</button>
@@ -348,12 +348,12 @@ input,textarea,select{background:#25262b;color:#f4f4f5;border-color:#45464d}
 let auth=null,db=null,storage=null,currentData=null,resultsCache=[],pendingSounds={};
 const $=id=>document.getElementById(id);
 const ADMIN_UID="4ATUxzkPlFPxOeCd5ffAsVcVQRf2";
-const SOUND_KEYS=["button","achievement","levelup","0","1","2","3","4","5"];
-const SOUND_LABELS={button:"Suara tombol",achievement:"Suara Achievement muncul",levelup:"Suara XP masuk ke level"};
+const SOUND_KEYS=["button","achievement","levelup","skipTroll","0","1","2","3","4","5"];
+const SOUND_LABELS={button:"Suara tombol",achievement:"Suara Achievement muncul",levelup:"Suara XP masuk ke level",skipTroll:"Suara troll saat Lewati ditekan"};
 function refreshSoundKeys(){
   const points=[...document.querySelectorAll(".o-points")].map(el=>Math.floor(Number(el.value))).filter(n=>Number.isFinite(n)&&n>=0);
   const max=Math.min(1000,Math.max(5,...points));
-  SOUND_KEYS.splice(0,SOUND_KEYS.length,"button","achievement","levelup",...Array.from({length:max+1},(_,i)=>String(i)));
+  SOUND_KEYS.splice(0,SOUND_KEYS.length,"button","achievement","levelup","skipTroll",...Array.from({length:max+1},(_,i)=>String(i)));
 }
 
 function msg(t){$("globalStatus").textContent=t||""}
@@ -377,7 +377,7 @@ function defaultQuestion(i){
       points:[5,3,2,1,0][j],
       feedback:["NAH INI BARU BENER 💀","lumayan ngerti","hampir kena","kok bisa 😭","BRO SIAPA KAMU"][j],
       explanation:"Keterangan jawaban bisa kamu edit sendiri.",
-      reactionImage:"", achievementEnabled:false, achievementTitle:"Achievement Made!", achievementName:"The End?", achievementImage:"", videoEnabled:false, videoType:"url", videoUrl:"", videoStoragePath:""
+      reactionImage:"", achievementEnabled:false, achievementTitle:"Achievement Made!", achievementName:"The End?", achievementImage:"", videoEnabled:false, videoShowMode:"afterLock", videoType:"url", videoUrl:"", videoStoragePath:""
     }))
   };
 }
@@ -534,17 +534,49 @@ function addOptionCard(parent,o,oi){
     </div>
     <div class="video-box">
       <label><input class="o-video-enabled" type="checkbox" ${o.videoEnabled?'checked':''}> ⭐ Aktifkan video khusus untuk pilihan ini</label>
+      <div class="video-editor ${o.videoEnabled?'':'hidden'}">
+      <label>Kapan video ditampilkan?</label>
+      <select class="o-video-show-mode">
+        <option value="adminPreview" ${((o.videoShowMode||"afterLock")==="adminPreview"||(o.videoShowMode||"")==="onSelect")?'selected':''}>Khusus admin — petunjuk saat opsi dipilih</option>
+        <option value="afterLock" ${(o.videoShowMode||"afterLock")==="afterLock"?'selected':''}>Setelah jawaban dikunci — sebagai reaksi</option>
+        <option value="manual" ${(o.videoShowMode||"afterLock")==="manual"?'selected':''}>Manual — peserta menekan tombol video setelah dikunci</option>
+      </select>
       <label>URL video / TikTok</label>
       <input class="o-video-url" value="${esc(o.videoUrl||"")}" placeholder="https://www.tiktok.com/@user/video/123... atau https://contoh.com/video.mp4">
       <label>Atau unggah video dari HP (maks. 50 MB)</label>
       <input class="o-video-file" type="file" accept="video/mp4,video/webm,video/quicktime">
       <div class="small o-video-upload-status">Video lokal diunggah ke Cloudinary; preset harus mengizinkan upload video.</div>
       <div class="small">Bisa tempel link TikTok biasa (format /@nama/video/ID) atau URL video langsung .mp4/.webm. Link TikTok akan ditampilkan memakai TikTok Embed Player resmi.</div>
-      <div class="small">Video hanya diputar jika ⭐ aktif dan pilihan ini dipilih peserta. Untuk TikTok, tekan ▶ jika autoplay diblokir browser.</div>
+      <div class="small">Mode petunjuk hanya untuk admin dan tidak ditampilkan kepada peserta. Mode reaksi muncul setelah jawaban dikunci; mode manual menunggu tombol peserta.</div>
+      <button type="button" class="secondary o-video-admin-preview-btn" style="margin-top:10px">▶ Pratinjau video (khusus admin)</button>
+      <div class="o-video-admin-preview" hidden style="margin-top:10px"></div>
+      </div>
     </div>`;
   const file=op.querySelector(".o-file"),img=op.querySelector(".o-image"),prev=op.querySelector(".preview");
   file.onchange=async()=>{if(file.files[0]){try{const d=await compressImage(file.files[0],700,.70);img.value=d;prev.src=d;prev.style.opacity=1}catch(e){alert("Gagal membaca gambar.")}}};
   img.oninput=()=>{prev.src=img.value;prev.style.opacity=1};
+  const adminPreviewBtn=op.querySelector(".o-video-admin-preview-btn");
+  const adminPreviewHost=op.querySelector(".o-video-admin-preview");
+  adminPreviewBtn?.addEventListener("click",()=>{
+    const raw=(op.querySelector(".o-video-url")?.value||"").trim();
+    if(!raw){alert("Masukkan URL video terlebih dahulu.");return;}
+    adminPreviewHost.hidden=false;
+    adminPreviewHost.replaceChildren();
+    let url;
+    try{url=new URL(raw)}catch{alert("URL video tidak valid.");return;}
+    if(!["https:","http:"].includes(url.protocol)){alert("URL harus menggunakan HTTP atau HTTPS.");return;}
+    const yt=raw.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    const vm=raw.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+    const tt=raw.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
+    if(yt||vm||tt){
+      const frame=document.createElement("iframe");frame.title="Pratinjau video admin";frame.style.cssText="width:100%;aspect-ratio:16/9;border:0;border-radius:12px;background:#000";
+      frame.src=yt?`https://www.youtube-nocookie.com/embed/${yt[1]}?playsinline=1`:vm?`https://player.vimeo.com/video/${vm[1]}`:`https://www.tiktok.com/player/v1/${tt[1]}?controls=1&description=0&music_info=0`;
+      frame.allow="fullscreen; autoplay; encrypted-media; picture-in-picture";frame.allowFullscreen=true;adminPreviewHost.appendChild(frame);
+    }else{
+      const video=document.createElement("video");video.controls=true;video.playsInline=true;video.preload="metadata";video.src=raw;video.style.cssText="width:100%;max-height:360px;border-radius:12px;background:#000";adminPreviewHost.appendChild(video);
+    }
+  });
+  op.querySelector(".o-video-url")?.addEventListener("input",()=>{if(adminPreviewHost){adminPreviewHost.replaceChildren();adminPreviewHost.hidden=true;}});
   const videoFile=op.querySelector(".o-video-file");
   videoFile.onchange=async()=>{
     const f=videoFile.files?.[0];if(!f)return;
@@ -565,6 +597,8 @@ function addOptionCard(parent,o,oi){
       status.textContent="Video berhasil diunggah. Tekan “Simpan Quiz” agar URL tersimpan dan muncul di halaman peserta.";
     }catch(e){status.textContent="Gagal: "+e.message;}
   };
+  const videoToggle=op.querySelector(".o-video-enabled"),videoEditor=op.querySelector(".video-editor");
+  videoToggle?.addEventListener("change",()=>videoEditor?.classList.toggle("hidden",!videoToggle.checked));
   const rfile=op.querySelector(".r-file"),rimg=op.querySelector(".o-reaction"),rprev=op.querySelector(".r-preview");
   rfile.onchange=()=>{if(rfile.files[0])openCrop(rfile.files[0],rimg,rprev);rfile.value=""};
   rimg.oninput=()=>{rprev.src=rimg.value;rprev.style.opacity=1};
@@ -685,6 +719,7 @@ function collectData(){
       achievementName:op.querySelector(".o-achievement-name")?.value.trim()||"The End?",
       achievementImage:op.querySelector(".o-achievement-image")?.value.trim()||"",
       videoEnabled:op.querySelector(".o-video-enabled")?.checked||false,
+      videoShowMode:op.querySelector(".o-video-show-mode")?.value||"afterLock",
       videoType:op.querySelector(".o-video-type")?.value||"url",
       videoUrl:op.querySelector(".o-video-url")?.value.trim()||"",
       videoStoragePath:op.dataset.videoStoragePath||""
@@ -764,6 +799,7 @@ function syncEditorIntoData(){
       achievementName:op.querySelector(".o-achievement-name")?.value.trim()||"The End?",
       achievementImage:op.querySelector(".o-achievement-image")?.value.trim()||"",
       videoEnabled:op.querySelector(".o-video-enabled")?.checked||false,
+      videoShowMode:op.querySelector(".o-video-show-mode")?.value||"afterLock",
       videoType:op.querySelector(".o-video-type")?.value||"url",
       videoUrl:op.querySelector(".o-video-url")?.value.trim()||"",
       videoStoragePath:op.dataset.videoStoragePath||""
