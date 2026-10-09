@@ -33,7 +33,7 @@ button.danger{background:#c83f4d}
 .hidden{display:none!important}
 .login{max-width:520px;margin:10vh auto}
 .option{border:1px solid var(--line);border-radius:16px;padding:14px;margin:12px 0;background:#fafbfc}
-.qhead{display:flex;align-items:center;justify-content:space-between;gap:10px}.qhead h2{margin:0;flex:1}.remove-q{flex:0 0 auto!important;width:auto!important;min-width:0;padding:4px 8px!important;font-size:11px!important;line-height:1.2;border-radius:8px!important;opacity:.78}.remove-q:active{transform:scale(.97)}
+.qhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .preview{width:90px;height:90px;object-fit:cover;border-radius:12px;border:1px solid var(--line);background:#f1f2f5}
 .image-row{display:grid;grid-template-columns:1fr 100px;gap:10px;align-items:end}
 .small{font-size:12px;color:var(--muted)}
@@ -81,7 +81,7 @@ th,td{padding:10px;border-bottom:1px solid #eee;text-align:left;white-space:nowr
   <input id="email" type="email" autocomplete="username" placeholder="Email admin">
   <label>Password</label>
   <input id="password" type="password" autocomplete="current-password" placeholder="Password">
-  <div class="actions"><button id="loginBtn">🔐 Login Admin</button></div>
+  <div class="actions"><button type="button" id="loginBtn">🔐 Login Admin</button></div>
   <div id="loginMsg" class="status"></div>
 </section>
 
@@ -239,10 +239,9 @@ th,td{padding:10px;border-bottom:1px solid #eee;text-align:left;white-space:nowr
       </div>
       <div class="card">
         <h2>📊 Hasil Peserta</h2>
-        <p class="small">Tekan Detail untuk melihat pilihan jawaban peserta per soal. Hasil lama yang tidak menyimpan answers akan diberi tanda belum tersedia.</p>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Nama</th><th>Skor</th><th>Maks.</th><th>Soal</th><th>Durasi</th><th>Waktu</th><th>Detail</th></tr></thead>
+            <thead><tr><th>Nama</th><th>Skor</th><th>Maks.</th><th>Soal</th><th>Durasi</th><th>Waktu</th></tr></thead>
             <tbody id="resultRows"></tbody>
           </table>
         </div>
@@ -279,7 +278,6 @@ th,td{padding:10px;border-bottom:1px solid #eee;text-align:left;white-space:nowr
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="cloudinary-config.js"></script>
 <script>
 let auth=null,db=null,currentData=null,resultsCache=[],pendingSounds={};
 const $=id=>document.getElementById(id);
@@ -385,12 +383,12 @@ function renderEditor(data){
 
 function addQuestionCard(q,qi,focus=true){
   const box=document.createElement("div");box.className="card qcard";
-  box.innerHTML=`<div class="qhead"><h2>Soal ${qi+1}</h2><button type="button" class="danger remove-q" aria-label="Hapus soal ${qi+1}" title="Hapus soal">Hapus</button></div>
+  box.innerHTML=`<div class="qhead"><h2>Soal ${qi+1}</h2><button type="button" class="danger remove-q">Hapus Soal</button></div>
     <label>Pertanyaan</label><textarea class="q-text">${esc(q.question||"")}</textarea>
     <div class="options"></div>`;
   const opts=box.querySelector(".options");
   (q.options||[]).forEach((o,oi)=>addOptionCard(opts,o,oi));
-  box.querySelector(".remove-q").onclick=()=>{if(document.querySelectorAll(".qcard").length<=1){alert("Minimal harus ada 1 soal.");return}if(!confirm(`Hapus Soal ${qi+1}? Perubahan baru tersimpan setelah menekan Simpan Quiz.`))return;box.remove();renumberQuestions()};
+  box.querySelector(".remove-q").onclick=()=>{if(document.querySelectorAll(".qcard").length<=1){alert("Minimal harus ada 1 soal.");return}box.remove();renumberQuestions()};
   $("questions").appendChild(box);
   if(focus)box.scrollIntoView({behavior:"smooth",block:"start"});
 }
@@ -522,32 +520,6 @@ $("cropApply").onclick=()=>{
   $("cropModal").classList.remove("open");cropState=null;dragging=false;
 };
 
-
-async function cloudinaryUploadDataUrl(dataUrl){
-  const cfg=window.CLOUDINARY_CONFIG||{};
-  if(!cfg.cloudName||!cfg.uploadPreset||cfg.cloudName.startsWith("ISI_")||cfg.uploadPreset.startsWith("ISI_")){
-    throw new Error("Konfigurasi Cloudinary belum diisi. Isi cloudName dan uploadPreset di cloudinary-config.js.");
-  }
-  const response=await fetch(dataUrl);const blob=await response.blob();
-  const form=new FormData();form.append("file",blob,"quiz-image.jpg");form.append("upload_preset",cfg.uploadPreset);
-  const res=await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cfg.cloudName)}/image/upload`,{method:"POST",body:form});
-  const body=await res.json();if(!res.ok||!body.secure_url)throw new Error(body.error?.message||"Upload gambar ke Cloudinary gagal.");
-  return body.secure_url;
-}
-async function migrateImagesToCloudinary(data){
-  const cache=new Map();let count=0;
-  async function convert(value){
-    if(typeof value!=="string"||!value.startsWith("data:image/"))return value||"";
-    if(cache.has(value))return cache.get(value);
-    const url=await cloudinaryUploadDataUrl(value);cache.set(value,url);count++;return url;
-  }
-  for(const q of (data.questions||[]))for(const o of (q.options||[])){
-    o.image=await convert(o.image);o.reactionImage=await convert(o.reactionImage);
-  }
-  for(const r of (data.resultRanges||[]))r.reactionImage=await convert(r.reactionImage);
-  return count;
-}
-
 function collectData(){
   const questions=[...document.querySelectorAll(".qcard")].map((box,qi)=>({
     order:qi+1,question:box.querySelector(".q-text").value.trim(),
@@ -628,7 +600,11 @@ function syncEditorIntoData(){
       points:safeNum(op.querySelector(".o-points").value,0),
       feedback:op.querySelector(".o-feedback").value,
       explanation:op.querySelector(".o-explanation").value,
-      reactionImage:op.querySelector(".o-reaction").value
+      reactionImage:op.querySelector(".o-reaction").value,
+      videoEnabled:op.querySelector(".o-video-enabled")?.checked||false,
+      videoType:"url",
+      videoUrl:op.querySelector(".o-video-url")?.value.trim()||"",
+      videoStoragePath:""
     }))
   }));
 }
@@ -641,10 +617,9 @@ $("saveRanges").onclick=async()=>{
       reactionImage:box.querySelector(".range-reaction").value
     }));
     currentData.resultRanges=ranges;
-    const migratedImages=await migrateImagesToCloudinary({questions:[],resultRanges:ranges});
     await db.collection("quizSettings").doc("main").set({resultRanges:ranges},{merge:true});
     renderRangeEditor(currentData);
-    $("rangeStatus").textContent=`Rentang hasil berhasil disimpan. Gambar dipindahkan: ${migratedImages}.`;
+    $("rangeStatus").textContent="Rentang hasil berhasil disimpan.";
   }catch(e){$("rangeStatus").textContent="Gagal menyimpan: "+e.message}
 };
 $("resetRanges").onclick=()=>{
@@ -656,23 +631,12 @@ $("saveQuiz").onclick=async()=>{
   msg("Menyimpan quiz...");
   try{
     const d=collectData();
-    if(!d.questions.length)throw new Error("Tambahkan minimal satu soal.");
-    if(d.questions.length>100)throw new Error("Maksimal 100 soal agar penyimpanan tetap aman.");
-    for(let i=0;i<d.questions.length;i++){
-      if(!d.questions[i].question)throw new Error(`Teks Soal ${i+1} masih kosong.`);
-      if(d.questions[i].options.length!==5)throw new Error(`Soal ${i+1} harus memiliki tepat 5 pilihan.`);
-      if(d.questions[i].options.some(o=>!o.text))throw new Error(`Isi semua teks pilihan pada Soal ${i+1}.`);
-    }
-    msg("Memindahkan gambar Base64 ke Cloudinary (jika ada)...");
-    const migratedImages=await migrateImagesToCloudinary(d);
-    const old=await db.collection("quizQuestions").get();
-    if(old.size+d.questions.length+1>490)throw new Error("Jumlah perubahan terlalu banyak untuk satu penyimpanan aman. Kurangi soal lama atau hubungi admin teknis.");
-    const batch=db.batch();
+    await db.collection("quizSettings").doc("main").set({eyebrow:d.eyebrow,title:d.title,subtitle:d.subtitle,display:d.display,resultRanges:d.resultRanges,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+    const old=await db.collection("quizQuestions").get(),batch=db.batch();
     old.docs.forEach(x=>batch.delete(x.ref));
     d.questions.forEach((q,i)=>batch.set(db.collection("quizQuestions").doc("q"+(i+1)),q));
-    batch.set(db.collection("quizSettings").doc("main"),{eyebrow:d.eyebrow,title:d.title,subtitle:d.subtitle,display:d.display,resultRanges:d.resultRanges,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
     await batch.commit();
-    currentData=d;msg(`✅ Quiz tersimpan. Halaman peserta yang dibuka/di-refresh akan memuat versi terbaru. Gambar dipindahkan ke Cloudinary: ${migratedImages}.`);
+    currentData=d;msg("✅ Quiz tersimpan. Halaman peserta akan memakai versi terbaru.");
   }catch(e){msg("❌ Gagal menyimpan quiz: "+e.message)}
 };
 $("saveAppearance").onclick=async()=>{msg("Menyimpan tampilan...");try{const d=readDisplayControls();await db.collection("quizSettings").doc("main").set({display:d,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});currentData.display=d;msg("✅ Tampilan teks tersimpan.");}catch(e){msg("❌ Gagal menyimpan tampilan: "+e.message)}};
@@ -703,64 +667,78 @@ $("clearSounds").onclick=async()=>{
   catch(e){soundMsg("❌ Gagal menghapus suara: "+e.message)}
 };
 
-function showAnswerDetail(id){
-  const x=resultsCache.find(r=>r.id===id);if(!x)return;
-  $("answerDetailTitle").textContent=`Jawaban: ${x.name||"Peserta"}`;
-  const answers=Array.isArray(x.answers)?x.answers:[];
-  if(!answers.length){$("answerDetailBody").innerHTML='<p>Data pilihan jawaban tidak tersedia untuk hasil lama ini. Hasil baru akan menyimpan pilihan per soal setelah versi publik terbaru dipasang.</p>';}
-  else $("answerDetailBody").innerHTML=answers.map((a,i)=>`<div class="option"><h3>Soal ${Number(a.order)||i+1}: ${esc(a.question||"(soal kosong)")}</h3><p><b>Pilihan peserta:</b> ${esc(a.selectedLabel||"")} — ${esc(a.selectedText||"(tidak tercatat)")}</p><p><b>Poin diperoleh:</b> ${Number(a.pointsEarned)||0}</p><p><b>Durasi soal:</b> ${Math.max(0,Number(a.durationSeconds)||0)} detik</p>${a.selectedImage?`<img class="preview" src="${esc(a.selectedImage)}" alt="Gambar pilihan peserta">`:""}<p><b>Feedback:</b> ${esc(a.feedback||"-")}</p><p><b>Penjelasan:</b> ${esc(a.explanation||"-")}</p></div>`).join("");
-  $("answerDetailModal").classList.add("open");
-}
-$("closeAnswerDetail").onclick=()=>$("answerDetailModal").classList.remove("open");
-$("answerDetailModal").addEventListener("click",e=>{if(e.target.id==="answerDetailModal")$("answerDetailModal").classList.remove("open")});
 async function loadResults(){
-  $("resultRows").innerHTML='<tr><td colspan="7">Memuat...</td></tr>';
+  $("resultRows").innerHTML='<tr><td colspan="6">Memuat...</td></tr>';
   try{
     const s=await db.collection("quizResults").orderBy("createdAt","desc").limit(500).get();
     resultsCache=s.docs.map(d=>({id:d.id,...d.data()}));
     $("resultRows").innerHTML=resultsCache.map(x=>{
       const sec=Math.max(0,Number(x.durationSeconds)||0);
-      return `<tr><td>${esc(x.name)}</td><td>${Number(x.score)||0}</td><td>${Number(x.maxScore)||0}</td><td>${Number(x.questionCount)||0}</td><td>${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")}</td><td>${x.createdAt?.toDate?x.createdAt.toDate().toLocaleString("id-ID"):"-"}</td><td><button class="secondary" onclick="showAnswerDetail('${x.id}')">Lihat detail</button></td></tr>`;
-    }).join("")||'<tr><td colspan="7">Belum ada hasil.</td></tr>';
-  }catch(e){$("resultRows").innerHTML='<tr><td colspan="7">❌ Gagal memuat hasil: '+esc(e.message)+'</td></tr>'}
+      return `<tr><td>${esc(x.name)}</td><td>${Number(x.score)||0}</td><td>${Number(x.maxScore)||0}</td><td>${Number(x.questionCount)||0}</td><td>${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")}</td><td>${x.createdAt?.toDate?x.createdAt.toDate().toLocaleString("id-ID"):"-"}</td></tr>`;
+    }).join("")||'<tr><td colspan="6">Belum ada hasil.</td></tr>';
+  }catch(e){$("resultRows").innerHTML='<tr><td colspan="6">❌ Gagal memuat hasil: '+esc(e.message)+'</td></tr>'}
 }
 $("refreshResults").onclick=loadResults;
 $("exportResults").onclick=()=>{
-  const rows=[["Nama","Skor","Maksimal","Jumlah soal","Durasi detik","Waktu kirim","Jawaban per soal"],...resultsCache.map(x=>[x.name,x.score,x.maxScore,x.questionCount,x.durationSeconds,x.createdAt?.toDate?x.createdAt.toDate().toISOString():"",JSON.stringify(x.answers||[])])];
+  const rows=[["Nama","Skor","Maksimal","Jumlah soal","Durasi detik","Waktu kirim"],...resultsCache.map(x=>[x.name,x.score,x.maxScore,x.questionCount,x.durationSeconds,x.createdAt?.toDate?x.createdAt.toDate().toISOString():""])];
   const csv=rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\n");
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="hasil-quiz-stive.csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500);
 };
 
-$("loginBtn").onclick=async()=>{
-  const email=$("email").value.trim(),password=$("password").value;
-  if(!email||!password){loginMsg("Isi email dan password admin.");return}
-  loginMsg("Login...");
-  try{const c=await auth.signInWithEmailAndPassword(email,password);if(c.user.uid!==ADMIN_UID){await auth.signOut();loginMsg("Akun ini bukan admin yang diizinkan.");return}loginMsg("")}
-  catch(e){loginMsg("❌ Login gagal: "+e.message)}
-};
-$("logoutBtn").onclick=()=>auth.signOut();
+$("loginBtn").addEventListener("click", async (event) => {
+  event.preventDefault();
+  const email=$("email").value.trim(), password=$("password").value;
+  if(!email || !password){loginMsg("Isi email dan password admin.");return;}
+  if(!auth){loginMsg("Firebase Auth belum siap. Muat ulang halaman dan pastikan firebase-config.js serta Firebase SDK berhasil dimuat.");return;}
+  const btn=$("loginBtn");
+  btn.disabled=true;
+  loginMsg("Menghubungkan ke Firebase...");
+  try {
+    const credential=await auth.signInWithEmailAndPassword(email,password);
+    if(credential.user.uid!==ADMIN_UID){
+      await auth.signOut();
+      loginMsg("Email/password valid, tetapi UID akun ini tidak cocok dengan ADMIN_UID di admin.html.");
+      return;
+    }
+    loginMsg("Login berhasil. Membuka panel admin...");
+  } catch(e) {
+    const messages={
+      "auth/invalid-email":"Format email tidak valid.",
+      "auth/user-not-found":"Akun admin tidak ditemukan di project Firebase ini.",
+      "auth/wrong-password":"Password salah.",
+      "auth/invalid-credential":"Email/password salah, atau akun tidak ada di project Firebase ini.",
+      "auth/too-many-requests":"Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.",
+      "auth/network-request-failed":"Koneksi gagal. Periksa internet atau pemblokir jaringan.",
+      "auth/operation-not-allowed":"Provider Email/Password belum diaktifkan di Firebase Authentication."
+    };
+    loginMsg("❌ "+(messages[e.code]||e.message||"Login gagal. Periksa Console browser untuk detail."));
+    console.error("Admin login error:",e.code,e.message,e);
+  } finally {
+    btn.disabled=false;
+  }
+});
+$("logoutBtn").onclick=()=>{if(auth)auth.signOut();};
 
 try{
-  firebase.initializeApp(window.FIREBASE_CONFIG);
-  auth=firebase.auth();db=firebase.firestore();
+  if(!window.FIREBASE_CONFIG || !window.FIREBASE_CONFIG.apiKey || !window.FIREBASE_CONFIG.projectId) {
+    throw new Error("firebase-config.js tidak ditemukan atau konfigurasinya belum lengkap.");
+  }
+  if(!window.firebase || !firebase.auth || !firebase.firestore) {
+    throw new Error("Firebase SDK belum termuat. Periksa koneksi internet atau apakah CDN Firebase diblokir.");
+  }
+  if(!firebase.apps.length) firebase.initializeApp(window.FIREBASE_CONFIG);
+  auth=firebase.auth(); db=firebase.firestore();
   auth.onAuthStateChanged(async user=>{
-    if(user&&user.uid===ADMIN_UID){
-      $("loginView").classList.add("hidden");$("appView").classList.remove("hidden");
-      await loadQuiz();await loadSounds();
-    }else{
-      $("loginView").classList.remove("hidden");$("appView").classList.add("hidden");
-      if(user)auth.signOut();
+    if(user && user.uid===ADMIN_UID){
+      $("loginView").classList.add("hidden"); $("appView").classList.remove("hidden");
+      try { await loadQuiz(); await loadSounds(); }
+      catch(e) { msg("Login berhasil, tetapi panel gagal dimuat: "+e.message); console.error(e); }
+    } else {
+      $("loginView").classList.remove("hidden"); $("appView").classList.add("hidden");
+      if(user) { loginMsg("Akun ini tidak memiliki akses admin."); await auth.signOut(); }
     }
-  });
-}catch(e){loginMsg("❌ Firebase gagal dimuat: "+e.message)}
+  }, e=>{loginMsg("Gagal memeriksa sesi login: "+e.message);console.error(e);});
+}catch(e){loginMsg("❌ Firebase gagal disiapkan: "+e.message);console.error(e);}
 </script>
-
-<div id="answerDetailModal" class="crop-modal" style="z-index:150">
-  <div class="crop-box" style="width:min(850px,100%);max-height:88vh;overflow:auto">
-    <div class="qhead"><h2 id="answerDetailTitle">Detail Jawaban</h2><button class="secondary" id="closeAnswerDetail">Tutup</button></div>
-    <div id="answerDetailBody"></div>
-  </div>
-</div>
-
 </body>
 </html>
