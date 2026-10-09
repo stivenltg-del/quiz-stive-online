@@ -72,7 +72,7 @@ th,td{padding:10px;border-bottom:1px solid #eee;text-align:left;white-space:nowr
 .card{box-shadow:0 14px 36px rgba(20,18,45,.08)}.top{backdrop-filter:blur(14px)}button{transition:transform .15s,filter .15s}button:hover{filter:saturate(1.15);transform:translateY(-1px)}.video-box{border:1px solid #c9b8ff;background:linear-gradient(135deg,#f6f0ff,#fff7fb)}.answer-detail-row td{white-space:normal;background:#faf8ff}.answer-detail-row.hidden{display:none!important}.preview{object-fit:cover}
 /* clean white premium theme + compact question accordions */
 :root{--bg:#fff;--card:#fff;--dark:#202124;--muted:#747782;--line:#e8e8ec;--accent:#e85d68}
-body{background:#fff;color:#24252a} .top{border-radius:18px;box-shadow:0 8px 28px #15151b0b} .card{border-radius:18px;box-shadow:0 8px 28px #15151b08} button{border-radius:13px;transition:transform .18s ease,box-shadow .18s ease,background .18s ease} button:hover{transform:translateY(-1px);box-shadow:0 7px 18px #11111112} .qcard{padding:0;overflow:hidden}.qhead{padding:14px 16px;margin:0;background:#fff;position:sticky;top:132px;z-index:2;border-bottom:1px solid #f0f0f3}.qhead h2{font-size:16px;margin:0;flex:1}.qhead .toggle-q{background:#f5f5f7;color:#27282e;border:1px solid #e9e9ee;padding:8px 12px}.qbody{padding:16px}.qsummary{font-size:12px;color:#81838b;margin-top:4px}.option{border-radius:15px;background:#fcfcfd}
+body{background:#fff;color:#24252a} .top{border-radius:18px;box-shadow:0 8px 28px #15151b0b} .card{border-radius:18px;box-shadow:0 8px 28px #15151b08} button{border-radius:13px;transition:transform .18s ease,box-shadow .18s ease,background .18s ease} button:hover{transform:translateY(-1px);box-shadow:0 7px 18px #11111112} .qcard{padding:0;overflow:hidden}.qhead{padding:14px 16px;margin:0;background:#fff;position:sticky;top:132px;z-index:2;border-bottom:1px solid #f0f0f3}.qhead h2{font-size:16px;margin:0;flex:1}.qhead .toggle-q{background:#f5f5f7;color:#27282e;border:1px solid #e9e9ee;padding:8px 12px}.qhead .remove-q{margin-left:auto;flex:0 0 auto;padding:5px 8px;font-size:11px;line-height:1.1;border-radius:9px;min-width:0}.qhead{gap:7px}.qhead .toggle-q{padding:7px 9px;font-size:12px}.qbody{padding:16px}.qsummary{font-size:12px;color:#81838b;margin-top:4px}.option{border-radius:15px;background:#fcfcfd}
 </style>
 </head>
 <body>
@@ -279,6 +279,7 @@ body{background:#fff;color:#24252a} .top{border-radius:18px;box-shadow:0 8px 28p
 .video-box .small{font-size:12px;color:#7f8591;line-height:1.45}
 </style>
 <script src="firebase-config.js"></script>
+<script src="cloudinary-config.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -392,7 +393,7 @@ function addQuestionCard(q,qi,focus=true){
   const opts=box.querySelector(".options");
   (q.options||[]).forEach((o,oi)=>addOptionCard(opts,o,oi));
   box.querySelector(".toggle-q").onclick=()=>{const body=box.querySelector(".qbody"),open=body.classList.toggle("hidden")===false;box.querySelector(".toggle-q").textContent=open?"Tutup":"Buka"};
-  box.querySelector(".remove-q").onclick=()=>{if(document.querySelectorAll(".qcard").length<=1){alert("Minimal harus ada 1 soal.");return}box.remove();renumberQuestions()};
+  box.querySelector(".remove-q").onclick=()=>{if(!confirm(`Apakah kamu yakin ingin menghapus Soal ${qi+1}?`))return;if(document.querySelectorAll(".qcard").length<=1){alert("Minimal harus ada 1 soal.");return}box.remove();renumberQuestions()};
   $("questions").appendChild(box);
   if(focus)box.scrollIntoView({behavior:"smooth",block:"start"});
 }
@@ -417,12 +418,32 @@ function addOptionCard(parent,o,oi){
       <label><input class="o-video-enabled" type="checkbox" ${o.videoEnabled?'checked':''}> ⭐ Aktifkan video khusus untuk pilihan ini</label>
       <label>URL video / TikTok</label>
       <input class="o-video-url" value="${esc(o.videoUrl||"")}" placeholder="https://www.tiktok.com/@user/video/123... atau https://contoh.com/video.mp4">
+      <label>Atau unggah video dari HP (maks. 50 MB)</label>
+      <input class="o-video-file" type="file" accept="video/mp4,video/webm,video/quicktime">
+      <div class="small o-video-upload-status">Video lokal diunggah ke Cloudinary; preset harus mengizinkan upload video.</div>
       <div class="small">Bisa tempel link TikTok biasa (format /@nama/video/ID) atau URL video langsung .mp4/.webm. Link TikTok akan ditampilkan memakai TikTok Embed Player resmi.</div>
       <div class="small">Video hanya diputar jika ⭐ aktif dan pilihan ini dipilih peserta. Untuk TikTok, tekan ▶ jika autoplay diblokir browser.</div>
     </div>`;
   const file=op.querySelector(".o-file"),img=op.querySelector(".o-image"),prev=op.querySelector(".preview");
   file.onchange=async()=>{if(file.files[0]){try{const d=await compressImage(file.files[0],700,.70);img.value=d;prev.src=d;prev.style.opacity=1}catch(e){alert("Gagal membaca gambar.")}}};
   img.oninput=()=>{prev.src=img.value;prev.style.opacity=1};
+  const videoFile=op.querySelector(".o-video-file");
+  videoFile.onchange=async()=>{
+    const f=videoFile.files?.[0];if(!f)return;
+    const status=op.querySelector(".o-video-upload-status");
+    if(f.size>50*1024*1024){status.textContent="File terlalu besar. Maksimal 50 MB.";videoFile.value="";return;}
+    const cfg=window.CLOUDINARY_CONFIG||{};
+    if(!cfg.cloudName||!cfg.uploadPreset){status.textContent="Konfigurasi Cloudinary belum tersedia.";return;}
+    status.textContent="Mengunggah video... jangan tutup halaman.";
+    try{
+      const form=new FormData();form.append("file",f);form.append("upload_preset",cfg.uploadPreset);form.append("folder","quiz-stive/videos");
+      const response=await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cfg.cloudName)}/video/upload`,{method:"POST",body:form});
+      const result=await response.json().catch(()=>({}));
+      if(!response.ok||!result.secure_url)throw new Error(result.error?.message||"Upload video gagal. Periksa preset Cloudinary.");
+      op.querySelector(".o-video-url").value=result.secure_url;
+      status.textContent="Video berhasil diunggah. URL tersimpan di kolom video.";
+    }catch(e){status.textContent="Gagal: "+e.message;}
+  };
   const rfile=op.querySelector(".r-file"),rimg=op.querySelector(".o-reaction"),rprev=op.querySelector(".r-preview");
   rfile.onchange=()=>{if(rfile.files[0])openCrop(rfile.files[0],rimg,rprev);rfile.value=""};
   rimg.oninput=()=>{rprev.src=rimg.value;rprev.style.opacity=1};
@@ -614,12 +635,18 @@ function syncEditorIntoData(){
 }
 async function persistImageValue(value, path){
   if(typeof value!=="string" || !value.startsWith("data:image/")) return value||"";
-  if(!storage || !auth || !auth.currentUser) throw new Error("Firebase Storage belum siap. Login admin ulang lalu coba lagi.");
-  const mime=(value.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/)||[])[1]||"image/jpeg";
-  const safePath=path.replace(/[^a-zA-Z0-9._/-]/g,"_");
-  const ref=storage.ref().child(`quiz-images/${auth.currentUser.uid}/${safePath}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`);
-  await ref.putString(value,"data_url",{contentType:mime});
-  return await ref.getDownloadURL();
+  const cfg=window.CLOUDINARY_CONFIG||{};
+  if(!cfg.cloudName||!cfg.uploadPreset) throw new Error("Konfigurasi Cloudinary belum lengkap.");
+  const endpoint=`https://api.cloudinary.com/v1_1/${encodeURIComponent(cfg.cloudName)}/image/upload`;
+  const body=new FormData();
+  body.append("file",value);
+  body.append("upload_preset",cfg.uploadPreset);
+  body.append("folder","quiz-stive");
+  body.append("public_id",String(path||"image").replace(/[^a-zA-Z0-9_-]/g,"_")+"_"+Date.now()+"_"+Math.random().toString(36).slice(2,8));
+  const response=await fetch(endpoint,{method:"POST",body});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok||!result.secure_url) throw new Error(result.error?.message||"Upload Cloudinary gagal. Periksa unsigned upload preset.");
+  return result.secure_url;
 }
 async function persistQuizImages(data){
   for(let qi=0;qi<(data.questions||[]).length;qi++){
