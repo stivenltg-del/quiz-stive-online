@@ -59,7 +59,7 @@ body{padding:22px 20px 34px}
 .quiz-head{margin-top:55px}
 .progress{font-size:14px;color:#a5a9b3;letter-spacing:1px;margin-bottom:14px}
 .livesbar{display:flex;align-items:center;gap:8px;margin:0 0 16px;font-weight:900}
-.heart{font-size:24px;transition:.15s}
+.heart{display:inline-block;width:30px;height:30px;transition:transform .18s;image-rendering:pixelated}.heart svg{display:block;width:100%;height:100%;image-rendering:pixelated}.heart:active{transform:scale(.9)}
 .points-pop{margin:14px 0 0;padding:12px 15px;border-radius:14px;background:#fff7f7;border:1px solid #ffd4d6;font-weight:900;color:#d95d62}
 .retry-box{margin-top:20px;padding:18px;border-radius:18px;background:#fff7f7;border:1px solid #ffd4d6}
 
@@ -69,7 +69,7 @@ body{padding:22px 20px 34px}
   border:1px solid #ececf1;background:#fff;border-radius:20px;padding:14px;display:flex;gap:15px;
   align-items:center;text-align:left;cursor:pointer;transition:.18s
 }
-.option:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,0,0,.05)}
+.option:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(0,0,0,.055)}
 .option.selected{border:2px solid var(--coral);background:#fff7f7}
 .option img{width:76px;height:76px;border-radius:14px;object-fit:cover;background:#f0f1f5}
 .option b{font-size:17px}.option small{display:block;color:#9da2ae;margin-top:5px}
@@ -176,6 +176,9 @@ textarea{min-height:75px;resize:vertical}
   .meme-check img{min-height:130px}
 }
 
+/* Minimal white / smooth edition */
+:root{--bg:#fff;--card:#fff;--dark:#222328;--coral:#e85d68;--pink:#fff7f7;--muted:#858994;--shadow:0 14px 42px rgba(25,25,35,.055)}
+html,body{background:#fff;color:#25262b} .card{border:1px solid #f0f0f3;border-radius:28px} .blob{background:#fff8f8} .primary{border-radius:17px;box-shadow:0 8px 22px #20273712;transition:transform .2s,box-shadow .2s} .primary:hover{transform:translateY(-2px);box-shadow:0 12px 26px #20273716} .option{border-radius:17px;border-color:#e9e9ee;transition:all .2s ease} .option.selected{background:#fff8f8;border-color:var(--coral)} .feedback{border-radius:20px;background:#fff;border-color:#ededf1} .feedback img.reaction-image{width:min(100%,360px);aspect-ratio:1/1;object-fit:cover;margin:16px auto 0;display:block;border-radius:18px} .livesbar{gap:7px;color:#777b85;font-size:13px;letter-spacing:.3px} .selected-video-preview{margin-top:14px;padding:12px;border:1px solid #eee;border-radius:18px;background:#fff} .inline-video{width:min(100%,380px);aspect-ratio:9/16;max-height:65vh;margin:auto;background:#111;border-radius:14px;overflow:hidden}.inline-video iframe,.inline-video video{width:100%;height:100%;border:0;object-fit:contain}
 </style>
 <style>.check-wrap{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:20px}.check-label{font-weight:800;font-size:16px}.meme-check{width:78px;height:78px;padding:0!important;border:3px solid #fff!important;border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 5px 14px rgba(0,0,0,.12);cursor:pointer}.meme-check img{width:100%;height:100%;object-fit:contain;display:block}.meme-check:active{transform:scale(.95)}@media(max-width:600px){.check-label{font-size:14px}.meme-check{width:68px;height:68px}}</style>
 
@@ -186,6 +189,22 @@ textarea{min-height:75px;resize:vertical}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
 .name-modal{position:fixed;inset:0;background:rgba(20,25,38,.45);display:grid;place-items:center;padding:20px;z-index:50}.name-box{width:min(420px,100%);background:#fff;border-radius:24px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.2);text-align:center}.name-box h2{margin:0 0 8px}.name-box p{color:#8d93a0;margin:0 0 18px}.name-box input{width:100%;padding:14px 16px;border:1px solid #dddfe7;border-radius:14px;font-size:16px;outline:none}.name-box button{margin-top:12px;width:100%;justify-content:center}.name-error{color:#d9534f;font-size:13px;min-height:18px;margin-top:8px}.submit-status{font-size:13px;color:#777;margin-top:10px}.name-box.hidden{display:none!important}
+</style>
+<style>.reaction-image{display:block;width:min(100%,420px);aspect-ratio:1/1;object-fit:cover;border-radius:22px;margin:18px auto;box-shadow:0 12px 32px #1112}.inline-video{width:min(100%,460px);margin:18px auto;aspect-ratio:9/16;background:#090909;border-radius:20px;overflow:hidden;box-shadow:0 14px 40px #17102730}.inline-video iframe,.inline-video video{width:100%;height:100%;border:0;display:block;object-fit:contain}.selected-video-preview{grid-column:1/-1;width:100%}.selected-video-preview .inline-video{margin:10px auto}.app{filter:saturate(1.04)}.brand{font-weight:950;letter-spacing:.3px}.eyebrow:after{content:" • NO DEBAT, INI UJIAN NASIONAL PERCINTAAN 💀";font-size:10px;letter-spacing:1px;opacity:.68}@media(max-width:600px){.inline-video{width:100%}}</style>
+<style>
+/* White Smooth Upgrade: subtle, accessible polish; preserve original white/red identity */
+:root{color-scheme:light;scroll-behavior:smooth}
+body{background:#f8f8fa!important;color:#24252a;-webkit-font-smoothing:antialiased}
+.app{filter:none!important}
+.topbar,.card,.name-box{border:1px solid #eeeeF2;box-shadow:0 10px 34px rgba(25,25,35,.055)}
+.primary,.option,.meme-check,.sound-toggle,.toggle-q,.secondary,.danger{transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease,background .18s ease}
+.primary{box-shadow:0 5px 0 rgba(190,35,49,.12),0 8px 22px rgba(190,35,49,.08)}
+.primary:active,.option:active,.meme-check:active{transform:scale(.985)}
+.option{border:1px solid #ececf1;box-shadow:0 2px 9px rgba(20,20,30,.025)}
+.option:hover,.option.selected{border-color:#e65a65;box-shadow:0 5px 18px rgba(230,90,101,.10)}
+:focus-visible{outline:3px solid rgba(230,70,84,.38)!important;outline-offset:3px}
+.heart svg{image-rendering:pixelated;shape-rendering:crispEdges}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
@@ -211,7 +230,7 @@ textarea{min-height:75px;resize:vertical}
     <section id="home" class="content">
       <div class="eyebrow" id="eyebrow">QUIZ PERSONAL GW</div>
       <h1 class="hero-title" id="heroTitle">SEBERAPA KENAL KAMU SAMA STIVEN?</h1>
-      <p class="subtitle" id="heroSubtitle">[EDIT SUBJUDUL QUIZ]</p>
+      <p class="subtitle" id="heroSubtitle">[EDIT SUBJUDUL QUIZ]</p><p class="editor-note" style="font-size:13px;color:#9699a2;margin-top:-24px;margin-bottom:28px">Santai, ini cuma quiz. Yang diuji pengetahuan, bukan kesetiaan.</p>
       <button class="primary" onclick="startQuiz()">JOM <span class="arrow">→</span></button>
     </section>
 
@@ -268,15 +287,15 @@ textarea{min-height:75px;resize:vertical}
 
 let quiz=defaultQuiz;
 const MAX_LIVES=3;
-let current=0,score=0,selected=null,checked=false,participantName="",quizStartedAt=0,resultSent=false;
-let randomizedOptions=[],participantLives=MAX_LIVES;
+let current=0,score=0,selected=null,checked=false,participantName="",quizStartedAt=0,resultSent=false,questionStartedAt=0;
+let randomizedOptions=[],participantLives=MAX_LIVES,answerLog=[];
 
 function show(id){["home","quiz","final"].forEach(x=>document.getElementById(x).classList.add("hidden"));document.getElementById(id).classList.remove("hidden")}
 function resetLives(){participantLives=MAX_LIVES;renderLives()}
-function renderLives(){const el=document.getElementById("livesBar");if(el)el.innerHTML=`Darah: ${Array.from({length:MAX_LIVES},(_,i)=>`<span class="heart">${i<participantLives?"❤️":"🖤"}</span>`).join("")}`}
+function renderLives(){const el=document.getElementById("livesBar");if(!el)return;const heart=(filled)=>`<span class="heart" aria-label="${filled?"Nyawa tersedia":"Nyawa habis"}"><svg viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path d="M2 1h4v1h4V1h4v1h1v4h-1v2h-1v2h-2v2H9v1H7v-1H5v-2H3V8H2V6H1V2h1z" fill="${filled?"#ef3340":"#fff"}" stroke="${filled?"#292929":"#d94b55"}" stroke-width=".8"/><path d="M3 2h3v1h4V2h3v3h-1v2h-1v2H9v2H7v-1H5V8H4V6H3z" fill="${filled?"#ef3340":"#fff"}"/><path d="M3 2h3v1H4v2H3z" fill="${filled?"#ff7b83":"#fff"}"/></svg></span>`;el.innerHTML=`Nyawa ${Array.from({length:MAX_LIVES},(_,i)=>heart(i<participantLives)).join("")}`;}
 function showPoints(points){const el=document.getElementById("pointsPop");if(!el)return;el.textContent=points>0?`+${points} poin 🎉`:"0 poin • -1 ❤️";el.classList.remove("hidden");}
 function hidePoints(){document.getElementById("pointsPop")?.classList.add("hidden")}
-function startFreshQuiz(){current=0;score=0;selected=null;checked=false;resultSent=false;resetLives();quizStartedAt=Date.now();show("quiz");renderQuestion()}
+function startFreshQuiz(){current=0;score=0;selected=null;checked=false;resultSent=false;answerLog=[];resetLives();quizStartedAt=Date.now();questionStartedAt=quizStartedAt;show("quiz");renderQuestion()}
 function startQuiz(){
   if(!participantName){document.getElementById("nameModal").classList.remove("hidden");setTimeout(()=>document.getElementById("participantName").focus(),50);return}
   startFreshQuiz();
@@ -321,7 +340,7 @@ function renderQuestion(){
   document.getElementById("question").textContent=q.question||"";
   applyDisplayStyles(quiz.display||{});hidePoints();renderLives();
   document.getElementById("feedback").classList.add("hidden");document.getElementById("nextBtn").classList.add("hidden");document.getElementById("checkBtn").classList.remove("hidden");
-  selected=null;checked=false;
+  selected=null;checked=false;questionStartedAt=Date.now();
   document.getElementById("options").innerHTML=randomizedOptions.map((o,i)=>`<button class="option" onclick="selectOption(${i})"><img src="${escapeAttr(o.image||"")}" onerror="this.style.display='none'"><span><b>${String.fromCharCode(65+i)}. ${escapeHTML(o.text||"")}</b></span></button>`).join("");
 }
 function selectOption(i){
@@ -329,52 +348,16 @@ function selectOption(i){
   selected=i;
   document.querySelectorAll(".option").forEach((el,n)=>el.classList.toggle("selected",n===i));
   const o=randomizedOptions[i]||{};
+  document.querySelector(".selected-video-preview")?.remove();
+  closeSpecialVideo();
   if(o.videoEnabled && o.videoUrl){
-    showInlineVideo(o);
-  }else{
-    document.getElementById("feedback").classList.add("hidden");
+    const box=document.createElement("div");box.className="selected-video-preview";
+    const tid=getTikTokId(o.videoUrl);
+    if(tid){const frame=document.createElement("iframe");frame.title="TikTok reaction";frame.src=`https://www.tiktok.com/player/v1/${tid}?controls=1&description=0&music_info=0`;frame.allow="fullscreen; autoplay";frame.allowFullscreen=true;box.innerHTML='<div class="inline-video"></div><p style="text-align:center;font-size:13px;opacity:.75">Reaction video 💀</p>';box.querySelector(".inline-video").appendChild(frame);}
+    else {const video=document.createElement("video");video.controls=true;video.playsInline=true;video.preload="metadata";video.src=o.videoUrl;video.onerror=()=>{const note=document.createElement("p");note.style.cssText="padding:10px;text-align:center;color:#b42332;font-size:13px";note.textContent="Video tidak bisa diputar. Gunakan link .mp4/.webm langsung atau link TikTok lengkap.";box.appendChild(note)};box.innerHTML='<div class="inline-video"></div>';box.querySelector(".inline-video").appendChild(video);}
+    document.getElementById("options").appendChild(box);
   }
 }
-function getTikTokId(url){
-  try{
-    const u=new URL(String(url).trim());
-    const m=u.pathname.match(/\/video\/(\d+)/)||u.pathname.match(/\/player\/v1\/(\d+)/);
-    return m?m[1]:null;
-  }catch(e){return null}
-}
-function makeInlineVideo(url){
-  const wrap=document.createElement("div");
-  wrap.className="inline-special-video";
-  wrap.style.cssText="margin-top:16px;border-radius:18px;overflow:hidden;background:#000;position:relative;width:100%;aspect-ratio:9/16;max-height:520px";
-  const clean=String(url||"").trim();
-  const tid=getTikTokId(clean);
-  if(tid){
-    const iframe=document.createElement("iframe");
-    iframe.src=`https://www.tiktok.com/player/v1/${tid}?controls=1&description=1&music_info=1&loop=1`;
-    iframe.style.cssText="width:100%;height:100%;border:0;display:block";
-    iframe.setAttribute("allow","fullscreen; autoplay");
-    iframe.setAttribute("allowfullscreen","");
-    iframe.title="TikTok video";
-    wrap.appendChild(iframe);
-  }else{
-    const v=document.createElement("video");
-    v.controls=true;v.playsInline=true;v.preload="metadata";v.style.cssText="width:100%;height:100%;object-fit:contain;display:block";
-    v.src=clean;v.volume=1;
-    wrap.appendChild(v);
-  }
-  return wrap;
-}
-function showInlineVideo(o){
-  const f=document.getElementById("feedback");
-  if(!f)return;
-  f.innerHTML="";
-  const h=document.createElement("h2");
-  h.textContent="🎬 Video khusus";
-  f.appendChild(h);
-  f.appendChild(makeInlineVideo(o.videoUrl));
-  f.classList.remove("hidden");
-}
-
 function ensureVideoModal(){
   let m=document.getElementById('videoModal');
   if(m)return m;
@@ -385,6 +368,13 @@ function ensureVideoModal(){
   document.getElementById('videoClose').addEventListener('click',closeSpecialVideo);
   m.addEventListener('click',e=>{if(e.target===m)closeSpecialVideo()});
   return m;
+}
+function getTikTokId(url){
+  try{
+    const u=new URL(url);
+    const m=u.pathname.match(/\/video\/(\d+)/)||u.pathname.match(/\/player\/v1\/(\d+)/);
+    return m?m[1]:null;
+  }catch(e){return null}
 }
 function closeSpecialVideo(){
   const m=document.getElementById('videoModal'),stage=document.getElementById('videoStage');
@@ -420,15 +410,14 @@ function checkAnswer(){
   checked=true;
   const o=randomizedOptions[selected]||{};
   const pts=Math.max(0,Number(o.points)||0);
+  answerLog.push({question:quiz.questions[current]?.question||"",selectedText:o.text||"",points:pts,durationSeconds:Math.max(0,Math.round((Date.now()-questionStartedAt)/1000)),feedback:o.feedback||"",explanation:o.explanation||""});
   score+=pts;showPoints(pts);if(typeof playCustomSound==="function")playCustomSound(pts);
   if(pts===0)participantLives=Math.max(0,participantLives-1);
   renderLives();
   document.getElementById("checkBtn").classList.add("hidden");
   const f=document.getElementById("feedback");
-  const reaction=(!o.videoEnabled && o.reactionImage)?`<img src="${escapeAttr(o.reactionImage)}" onerror="this.style.display='none'">`:"";
-  f.innerHTML=`<h2>${escapeHTML(o.feedback||"")}</h2><p>${escapeHTML(o.explanation||"")}</p>${reaction}`;
-  if(o.videoEnabled && o.videoUrl) f.appendChild(makeInlineVideo(o.videoUrl));
-  f.classList.remove("hidden");
+  const reaction=(!o.videoEnabled && o.reactionImage)?`<img class="reaction-image" src="${escapeAttr(o.reactionImage)}" onerror="this.style.display='none'">`:"";
+  f.innerHTML=`<h2>${escapeHTML(o.feedback||"")}</h2><p>${escapeHTML(o.explanation||"")}</p>${reaction}`;f.classList.remove("hidden");
   if(participantLives<=0){
     f.innerHTML=`<h2>💔 Darah habis!</h2><p>Quiz akan dimulai ulang dari awal.</p>`;
     document.getElementById("nextBtn").classList.add("hidden");
@@ -451,7 +440,7 @@ async function saveResult(){
   try{
     if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE_CONFIG);
     const db=firebase.firestore(),maxScore=quiz.questions.reduce((sum,q)=>sum+Math.max(0,...(q.options||[]).map(o=>Number(o.points)||0)),0);
-    await db.collection("quizResults").add({name:participantName,score:Number(score)||0,maxScore,questionCount:quiz.questions.length,durationSeconds:Math.max(0,Math.round((Date.now()-quizStartedAt)/1000)),createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    await db.collection("quizResults").add({name:participantName,score:Number(score)||0,maxScore,questionCount:quiz.questions.length,durationSeconds:Math.max(0,Math.round((Date.now()-quizStartedAt)/1000)),answers:answerLog,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
     resultSent=true;
   }catch(e){console.error("Gagal mengirim hasil:",e)}
 }
