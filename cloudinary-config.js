@@ -1,2 +1,4 @@
-// Isi setelah membuat Cloudinary cloud name dan unsigned upload preset.
-window.CLOUDINARY_CONFIG = { cloudName: "ISI_CLOUD_NAME", uploadPreset: "ISI_UNSIGNED_UPLOAD_PRESET" };
+window.CLOUDINARY_CONFIG = {
+  cloudName: "vhsppjpq",
+  uploadPreset: "quiz_stive_upload"
+};
