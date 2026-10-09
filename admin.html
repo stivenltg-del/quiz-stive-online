@@ -79,6 +79,34 @@ body{background:#fff;color:#24252a} .top{border-radius:18px;box-shadow:0 8px 28p
 .remove-q{background:#fff!important;color:#a72f3b!important;border:1px solid #f0c9cd!important;min-width:0!important;padding:5px 8px!important;font-size:11px!important}
 .status{overflow-wrap:anywhere}.status:empty{display:none}
 @media(max-width:520px){.card{padding:13px}.qhead{top:120px;padding:10px}.brand{font-size:18px}.actions button{flex:1 1 auto}.tool{font-size:12px}}
+/* Tema catur: hitam lebih dominan, dengan kotak terang sebagai aksen */
+:root{--bg:#111214;--card:#1b1c20;--dark:#f4f4f5;--muted:#b7b8bf;--line:#34353b;--accent:#e85d68}
+html,body{background:#111214;color:#f4f4f5}
+.top{background:rgba(24,25,29,.97);border-color:#3a3b42;box-shadow:0 12px 35px #0008}
+.brand{color:#fff}
+.tool{background:#25262b;color:#eee;border-color:#414249}
+.tool.active{background:#f1f1f1!important;color:#111214!important}
+button:not(.secondary):not(.remove-q){background:#f1f1f1;color:#111214}
+button.danger{background:#b42332!important;color:#fff!important}
+button.secondary{background:#24252a;color:#f2f2f4;border-color:#45464d}
+.card{background:#1b1c20;border-color:#36373e;box-shadow:0 12px 32px #0005}
+input,textarea,select{background:#25262b;color:#f4f4f5;border-color:#45464d}
+.option,.sound-card,.score-range-card{background:#222328;border-color:#3a3b42}
+.qhead{background:#202126;border-color:#3a3b42}
+.qhead .toggle-q{background:#33343a;color:#fff;border-color:#494a51}
+.status{background:#25262b;color:#eee}
+.preview-shell{background:#121316;border-color:#3b3c42}
+.live-home{background:#f5f5f5;color:#171717}
+.live-home:before{background:#d9d9d9}
+.live-subtitle{color:#555}
+.settings-list{display:grid;gap:10px;margin-top:16px}
+.settings-item{width:100%;display:grid;grid-template-columns:36px 1fr 20px;gap:12px;align-items:center;text-align:left;background:#24252a!important;color:#f4f4f5!important;border:1px solid #44454c!important;padding:15px;border-radius:14px}
+.settings-item>span:first-child{font-size:22px}
+.settings-item b,.settings-item small{display:block}
+.settings-item small{color:#b7b8bf;font-weight:500;font-size:12px;margin-top:4px;line-height:1.4}
+.settings-arrow{font-size:26px;color:#ddd;text-align:right}
+.top:before{background:repeating-linear-gradient(90deg,#050505 0 18px,#f1f1f1 18px 36px);opacity:1}
+.video-box{background:#222328;border-color:#44454c}
 </style>
 </head>
 <body>
@@ -103,9 +131,7 @@ body{background:#fff;color:#24252a} .top{border-radius:18px;box-shadow:0 8px 28p
     </div>
     <div class="tools">
       <button class="tool active" data-view="editor">✏️ Quiz</button>
-      <button class="tool" data-view="appearance">🎨 Tampilan</button>
-      <button class="tool" data-view="ranges">🏆 Rentang Poin</button>
-      <button class="tool" data-view="sounds">🔊 Suara</button>
+      <button class="tool" data-view="settings">🔧 Settings</button>
       <button class="tool" data-view="results">📊 Hasil</button>
     </div>
   </header>
@@ -128,6 +154,19 @@ body{background:#fff;color:#24252a} .top{border-radius:18px;box-shadow:0 8px 28p
         </div>
       </div>
       <div id="questions"></div>
+    </section>
+
+    <section id="view-settings" class="hidden">
+      <button class="secondary back" data-view="editor">← Kembali ke Edit Quiz</button>
+      <div class="card">
+        <h2>🔧 Settings</h2>
+        <p class="small">Pengaturan tambahan dikumpulkan di sini supaya menu utama lebih ringkas.</p>
+        <div class="settings-list">
+          <button type="button" class="settings-item" data-view="sounds"><span>🔈</span><span><b>Pengaturan Suara</b><small>Atur suara tombol dan suara berdasarkan poin.</small></span><span class="settings-arrow">›</span></button>
+          <button type="button" class="settings-item" data-view="appearance"><span>🎨</span><span><b>Tampilan Quiz</b><small>Atur posisi, ukuran, dan warna teks.</small></span><span class="settings-arrow">›</span></button>
+          <button type="button" class="settings-item" data-view="ranges"><span>🏆</span><span><b>Rentang Poin</b><small>Atur label, pesan, dan reaction tiap tingkat.</small></span><span class="settings-arrow">›</span></button>
+        </div>
+      </div>
     </section>
 
     <section id="view-appearance" class="hidden">
@@ -295,7 +334,12 @@ let auth=null,db=null,storage=null,currentData=null,resultsCache=[],pendingSound
 const $=id=>document.getElementById(id);
 const ADMIN_UID="4ATUxzkPlFPxOeCd5ffAsVcVQRf2";
 const SOUND_KEYS=["button","0","1","2","3","4","5"];
-const SOUND_LABELS={button:"Suara tombol",0:"Suara 0 poin",1:"Suara 1 poin",2:"Suara 2 poin",3:"Suara 3 poin",4:"Suara 4 poin",5:"Suara 5 poin"};
+const SOUND_LABELS={button:"Suara tombol"};
+function refreshSoundKeys(){
+  const points=[...document.querySelectorAll(".o-points")].map(el=>Math.floor(Number(el.value))).filter(n=>Number.isFinite(n)&&n>=0);
+  const max=Math.min(1000,Math.max(5,...points));
+  SOUND_KEYS.splice(0,SOUND_KEYS.length,"button",...Array.from({length:max+1},(_,i)=>String(i)));
+}
 
 function msg(t){$("globalStatus").textContent=t||""}
 function loginMsg(t){$("loginMsg").textContent=t||""}
@@ -374,9 +418,10 @@ function mergeDisplay(d){
 }
 
 function switchView(view){
-  document.querySelectorAll(".tool[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
-  ["editor","appearance","ranges","sounds","results"].forEach(v=>$("view-"+v).classList.toggle("hidden",v!==view));
+  document.querySelectorAll(".tool[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===view || (view==="appearance"||view==="ranges"||view==="sounds")&&b.dataset.view==="settings"));
+  ["editor","settings","appearance","ranges","sounds","results"].forEach(v=>$("view-"+v).classList.toggle("hidden",v!==view));
   if(view==="results")loadResults();
+  if(view==="sounds")loadSounds();
 }
 document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>switchView(b.dataset.view)));
 
@@ -401,6 +446,7 @@ function addQuestionCard(q,qi,focus=true){
   box.querySelector(".toggle-q").onclick=()=>{const body=box.querySelector(".qbody"),open=body.classList.toggle("hidden")===false;box.querySelector(".toggle-q").textContent=open?"Tutup":"Buka"};
   box.querySelector(".remove-q").onclick=()=>{if(!confirm(`Apakah kamu yakin ingin menghapus Soal ${qi+1}?`))return;if(document.querySelectorAll(".qcard").length<=1){alert("Minimal harus ada 1 soal.");return}box.remove();renumberQuestions()};
   $("questions").appendChild(box);
+  refreshSoundKeys();
   if(focus)box.scrollIntoView({behavior:"smooth",block:"start"});
 }
 function addOptionCard(parent,o,oi){
@@ -450,7 +496,7 @@ function addOptionCard(parent,o,oi){
       finally{clearTimeout(timeout)}
       if(!response.ok||!result.secure_url)throw new Error(result.error?.message||`Upload video gagal (HTTP ${response.status}). Pastikan preset Unsigned mengizinkan video/upload.`);
       op.querySelector(".o-video-url").value=result.secure_url;
-      status.textContent="Video berhasil diunggah. URL tersimpan di kolom video.";
+      status.textContent="Video berhasil diunggah. Tekan “Simpan Quiz” agar URL tersimpan dan muncul di halaman peserta.";
     }catch(e){status.textContent="Gagal: "+e.message;}
   };
   const rfile=op.querySelector(".r-file"),rimg=op.querySelector(".o-reaction"),rprev=op.querySelector(".r-preview");
@@ -715,6 +761,8 @@ $("saveQuiz").onclick=async()=>{
   saveButton.disabled=true;saveButton.textContent="⏳ Menyimpan…";
   msg("Memeriksa data quiz…");
   try{
+    const uploading=[...document.querySelectorAll(".o-video-upload-status")].some(el=>el.textContent.includes("Mengunggah video"));
+    if(uploading)throw new Error("Tunggu sampai upload video selesai, lalu tekan Simpan Quiz lagi.");
     if(!db||!auth||!auth.currentUser||auth.currentUser.uid!==ADMIN_UID)throw new Error("Sesi admin tidak aktif. Keluar lalu login kembali.");
     let d=collectData();
     if(!d.questions.length) throw new Error("Quiz harus memiliki minimal satu soal.");
@@ -738,18 +786,20 @@ $("saveAppearance").onclick=async()=>{msg("Menyimpan tampilan...");try{const d=r
 $("resetAppearance").onclick=()=>{renderAppearanceControls(DEFAULT_DISPLAY);msg("Tampilan dikembalikan ke default. Tekan Simpan Tampilan jika ingin menyimpannya.")};
 
 function buildSoundCards(){
+  refreshSoundKeys();
   const grid=$("soundGrid");grid.innerHTML="";
   SOUND_KEYS.forEach(k=>{
     const c=document.createElement("div");c.className="sound-card";
-    c.innerHTML=`<h3>${SOUND_LABELS[k]}</h3><input id="snd_${k}" type="file" accept="audio/*"><audio id="prev_${k}" controls></audio><div class="small">Upload baru akan mengganti suara ini.</div>`;
+    const label=k==="button"?"Suara tombol":`Suara ${k} poin`;
+    c.innerHTML=`<h3>${label}</h3><input id="snd_${k}" type="file" accept="audio/*"><audio id="prev_${k}" controls></audio><div class="small">Upload baru akan mengganti suara ini.</div>`;
     grid.appendChild(c);
-    c.querySelector("input").onchange=async()=>{const f=c.querySelector("input").files[0];if(!f)return;if(f.size>600000){soundMsg("File terlalu besar. Maksimal 600 KB per suara.");c.querySelector("input").value="";return}pendingSounds[k]=await readAsDataURL(f);c.querySelector("audio").src=pendingSounds[k];soundMsg("Suara siap disimpan.")};
+    c.querySelector("input").onchange=async()=>{const f=c.querySelector("input").files[0];if(!f)return;if(f.size>600000){soundMsg("File terlalu besar. Maksimal 600 KB per suara.");c.querySelector("input").value="";return}try{pendingSounds[k]=await readAsDataURL(f);c.querySelector("audio").src=pendingSounds[k];soundMsg("Suara siap disimpan.")}catch(e){soundMsg("Gagal membaca file suara: "+e.message)}};
   });
 }
 function readAsDataURL(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}
 async function loadSounds(){
   buildSoundCards();
-  for(const k of SOUND_KEYS){try{const s=await db.collection("quizSounds").doc(k).get();if(s.exists&&s.data().data){$("prev_"+k).src=s.data().data}}catch(e){soundMsg("❌ Gagal memuat suara: "+e.message);break}}
+  for(const k of SOUND_KEYS){try{const snap=await db.collection("quizSounds").doc(k).get();const audio=$("prev_"+k);if(audio&&snap.exists&&snap.data().data)audio.src=snap.data().data;else if(audio&&pendingSounds[k])audio.src=pendingSounds[k]}catch(e){soundMsg("❌ Gagal memuat suara: "+e.message);break}}
 }
 $("saveSounds").onclick=async()=>{
   soundMsg("Menyimpan suara...");

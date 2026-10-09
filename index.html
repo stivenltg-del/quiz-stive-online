@@ -179,6 +179,18 @@ textarea{min-height:75px;resize:vertical}
 /* Minimal white / smooth edition */
 :root{--bg:#fff;--card:#fff;--dark:#222328;--coral:#e85d68;--pink:#fff7f7;--muted:#858994;--shadow:0 14px 42px rgba(25,25,35,.055)}
 html,body{background:#fff;color:#25262b} .card{border:1px solid #f0f0f3;border-radius:28px} .blob{background:#fff8f8} .primary{border-radius:17px;box-shadow:0 8px 22px #20273712;transition:transform .2s,box-shadow .2s} .primary:hover{transform:translateY(-2px);box-shadow:0 12px 26px #20273716} .option{border-radius:17px;border-color:#e9e9ee;transition:all .2s ease} .option.selected{background:#fff8f8;border-color:var(--coral)} .feedback{border-radius:20px;background:#fff;border-color:#ededf1} .feedback img.reaction-image{width:min(100%,360px);aspect-ratio:1/1;object-fit:cover;margin:16px auto 0;display:block;border-radius:18px} .livesbar{gap:7px;color:#777b85;font-size:13px;letter-spacing:.3px} .selected-video-preview{margin-top:14px;padding:12px;border:1px solid #eee;border-radius:18px;background:#fff} .inline-video{width:min(100%,380px);aspect-ratio:9/16;max-height:65vh;margin:auto;background:#111;border-radius:14px;overflow:hidden}.inline-video iframe,.inline-video video{width:100%;height:100%;border:0;object-fit:contain}
+/* Tema catur: papan hitam-putih dengan hitam lebih dominan */
+:root{--bg:#111214;--card:#1b1c20;--dark:#f4f4f5;--muted:#b7b8bf;--line:#383940;--accent:#e85d68}
+html,body{background:#111214;color:#f4f4f5}
+.topbar{background:rgba(24,25,29,.96);border-color:#383940;box-shadow:0 12px 32px #0008}
+.card{background:#1b1c20;border-color:#383940;box-shadow:0 14px 35px #0005}
+.option{background:#24252a;color:#f5f5f5;border-color:#414249}
+.option.selected{background:#303136;border-color:#f1f1f1}
+input,textarea{background:#24252a;color:#f4f4f5;border-color:#45464d}
+.secondary,.sound-toggle{background:#24252a;color:#f4f4f5;border-color:#45464d}
+.primary{background:#f2f2f2;color:#111214}
+.topbar:after{content:"";position:absolute;left:0;right:0;bottom:0;height:5px;background:repeating-linear-gradient(90deg,#050505 0 18px,#f2f2f2 18px 36px);opacity:.95}
+.selected-video-preview{color:#f4f4f5;background:#202126;border:1px solid #3b3c42;border-radius:18px;padding:8px;margin-top:12px}
 </style>
 <style>.check-wrap{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:20px}.check-label{font-weight:800;font-size:16px}.meme-check{width:78px;height:78px;padding:0!important;border:3px solid #fff!important;border-radius:14px;overflow:hidden;background:#fff;box-shadow:0 5px 14px rgba(0,0,0,.12);cursor:pointer}.meme-check img{width:100%;height:100%;object-fit:contain;display:block}.meme-check:active{transform:scale(.95)}@media(max-width:600px){.check-label{font-size:14px}.meme-check{width:68px;height:68px}}</style>
 
@@ -359,9 +371,22 @@ function selectOption(i){
   closeSpecialVideo();
   if(o.videoEnabled && o.videoUrl){
     const box=document.createElement("div");box.className="selected-video-preview";
-    const tid=getTikTokId(o.videoUrl);
-    if(tid){const frame=document.createElement("iframe");frame.title="TikTok reaction";frame.src=`https://www.tiktok.com/player/v1/${tid}?controls=1&description=0&music_info=0`;frame.allow="fullscreen; autoplay";frame.allowFullscreen=true;box.innerHTML='<div class="inline-video"></div><p style="text-align:center;font-size:13px;opacity:.75">Reaction video 💀</p>';box.querySelector(".inline-video").appendChild(frame);}
-    else {const video=document.createElement("video");video.controls=true;video.playsInline=true;video.preload="metadata";video.src=o.videoUrl;video.onerror=()=>{const note=document.createElement("p");note.style.cssText="padding:10px;text-align:center;color:#b42332;font-size:13px";note.textContent="Video tidak bisa diputar. Gunakan link .mp4/.webm langsung atau link TikTok lengkap.";box.appendChild(note)};box.innerHTML='<div class="inline-video"></div>';box.querySelector(".inline-video").appendChild(video);}
+    const rawUrl=String(o.videoUrl||"").trim();
+    const tid=getTikTokId(rawUrl);
+    const yt=rawUrl.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    const vm=rawUrl.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+    const gd=rawUrl.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:[^#]*&)?id=)([A-Za-z0-9_-]+)/);
+    if(tid||yt||vm||gd){
+      const frame=document.createElement("iframe");frame.title="Video reaction";
+      frame.src=tid?`https://www.tiktok.com/player/v1/${tid}?controls=1&description=0&music_info=0`:yt?`https://www.youtube-nocookie.com/embed/${yt[1]}?playsinline=1`:vm?`https://player.vimeo.com/video/${vm[1]}`:`https://drive.google.com/file/d/${gd[1]}/preview`;
+      frame.allow="fullscreen; autoplay; encrypted-media; picture-in-picture";frame.allowFullscreen=true;
+      box.innerHTML='<div class="inline-video"></div><p style="text-align:center;font-size:13px;opacity:.75">Video reaction</p>';box.querySelector(".inline-video").appendChild(frame);
+    }
+    else {
+      const video=document.createElement("video");video.controls=true;video.playsInline=true;video.preload="metadata";video.src=rawUrl;video.setAttribute("controlsList","nodownload");
+      video.onerror=()=>{const note=document.createElement("p");note.style.cssText="padding:10px;text-align:center;color:#b42332;font-size:13px";note.textContent="Video tidak dapat diputar. Pastikan link bisa dibuka publik dan berupa file video langsung (.mp4/.webm/.mov), bukan halaman preview.";box.appendChild(note)};
+      box.appendChild(video);video.style.cssText="display:block;width:min(100%,460px);max-height:70vh;margin:18px auto;border-radius:18px;background:#000";
+    }
     document.getElementById("options").appendChild(box);
   }
 }
@@ -494,21 +519,37 @@ document.getElementById("eyebrow").textContent=quiz.eyebrow;document.getElementB
 </style>
 <script>
 let soundEnabled=localStorage.getItem('quizSoundEnabled')!=='0';
-const customSounds={button:'',0:'',1:'',2:'',3:'',4:'',5:''};
+const customSounds={button:''};
 function updateSoundButton(){const b=document.getElementById('soundToggle');if(!b)return;b.textContent=soundEnabled?'🔊 Suara ON':'🔇 Suara OFF';b.classList.toggle('off',!soundEnabled);}
 function toggleSound(){soundEnabled=!soundEnabled;localStorage.setItem('quizSoundEnabled',soundEnabled?'1':'0');updateSoundButton();if(soundEnabled)playCustomSound('button');}
 function playCustomSound(key){if(!soundEnabled)return;const src=customSounds[String(key)];if(!src)return;try{const a=new Audio(src);a.volume=.9;a.play().catch(()=>{});}catch(e){}}
 async function loadCustomSounds(){
   try{if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE_CONFIG);const db=firebase.firestore();
-    for(const k of Object.keys(customSounds)){const snap=await db.collection('quizSounds').doc(String(k)).get();if(snap.exists&&typeof snap.data().data==='string')customSounds[k]=snap.data().data;}
+    const maxPoint=Math.max(5,...(quiz.questions||[]).flatMap(q=>(q.options||[]).map(o=>Number(o.points)||0)));for(let i=0;i<=Math.min(1000,Math.floor(maxPoint));i++)customSounds[String(i)]='';for(const k of Object.keys(customSounds)){const snap=await db.collection('quizSounds').doc(String(k)).get();if(snap.exists&&typeof snap.data().data==='string')customSounds[k]=snap.data().data;}
   }catch(e){console.warn('Suara custom belum tersedia.',e);}
 }
 function installSoundUI(){const top=document.querySelector('.topbar');if(top&&!document.getElementById('soundToggle')){const b=document.createElement('button');b.id='soundToggle';b.className='sound-toggle';b.type='button';b.onclick=toggleSound;top.appendChild(b);}updateSoundButton();}
 const _startQuiz=startQuiz;startQuiz=function(){playCustomSound('button');return _startQuiz.apply(this,arguments)};
 const _selectOption=selectOption;selectOption=function(i){playCustomSound('button');return _selectOption.apply(this,arguments)};
-const _checkAnswer=checkAnswer;checkAnswer=function(){return _checkAnswer.apply(this,arguments)};
+const _checkAnswer=checkAnswer;checkAnswer=function(){
+  if(selected!==null&&!checked){const chosen=randomizedOptions[selected]||{};playCustomSound(String(Math.max(0,Math.floor(Number(chosen.points)||0))))}
+  return _checkAnswer.apply(this,arguments)
+};
 const _nextQuestion=nextQuestion;nextQuestion=function(){playCustomSound('button');return _nextQuestion.apply(this,arguments)};
-window.addEventListener('load',()=>{installSoundUI();loadCustomSounds();});
+window.addEventListener('load',async()=>{installSoundUI();try{await loadQuizFromFirebase();}catch(e){}await loadCustomSounds();});
 </script>
+<style id="chess-dark-theme">
+:root{--bg:#111214;--card:#1b1c20;--dark:#f4f4f5;--muted:#b7b8bf;--line:#383940;--accent:#e85d68}
+html,body{background:#111214!important;color:#f4f4f5}
+.topbar{position:relative;background:rgba(24,25,29,.97)!important;border-color:#383940!important;box-shadow:0 12px 32px #0008!important}
+.card{background:#1b1c20!important;color:#f4f4f5;border-color:#383940!important;box-shadow:0 14px 35px #0005!important}
+.option{background:#24252a!important;color:#f5f5f5!important;border-color:#414249!important}
+.option.selected{background:#303136!important;border-color:#f1f1f1!important}
+input,textarea{background:#24252a!important;color:#f4f4f5!important;border-color:#45464d!important}
+.secondary,.sound-toggle{background:#24252a!important;color:#f4f4f5!important;border-color:#45464d!important}
+.primary{background:#f2f2f2!important;color:#111214!important}
+.topbar:after{content:"";position:absolute;left:0;right:0;bottom:0;height:5px;background:repeating-linear-gradient(90deg,#050505 0 18px,#f2f2f2 18px 36px);opacity:.95;pointer-events:none}
+.selected-video-preview{color:#f4f4f5;background:#202126;border:1px solid #3b3c42;border-radius:18px;padding:8px;margin-top:12px}
+</style>
 </body>
 </html>
