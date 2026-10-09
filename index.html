@@ -63,11 +63,11 @@ body{padding:22px 20px 34px}
 .points-pop{margin:14px 0 0;padding:12px 15px;border-radius:14px;background:#fff7f7;border:1px solid #ffd4d6;font-weight:900;color:#d95d62}
 /* V5.1: animasi poin saat jawaban dikunci */
 .points-pop{animation:pointsPanelIn .28s cubic-bezier(.2,.8,.2,1) both}
-.points-burst{position:fixed;z-index:99995;left:50%;top:42%;transform:translate(-50%,-50%);pointer-events:none;text-align:center;font-weight:1000;font-size:clamp(34px,10vw,64px);line-height:1;color:#ffd83d;-webkit-text-stroke:1px #9c5b00;text-shadow:0 4px 0 #9c5b00,0 8px 18px #0005;animation:pointsBurst .95s cubic-bezier(.16,.8,.25,1) forwards}
+.points-burst{position:fixed;z-index:99995;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;text-align:center;font-weight:1000;font-size:clamp(34px,10vw,64px);line-height:1;color:#ffd83d;-webkit-text-stroke:1px #9c5b00;text-shadow:0 4px 0 #9c5b00,0 8px 18px #0005;animation:pointsBurst .95s cubic-bezier(.16,.8,.25,1) forwards}
 .points-burst small{display:block;margin-top:9px;font-size:14px;letter-spacing:2px;color:#fff;-webkit-text-stroke:0;text-shadow:0 2px 5px #000;font-weight:900}
-.points-spark{position:fixed;z-index:99994;left:50%;top:43%;width:9px;height:9px;border-radius:3px;background:#ffdc45;pointer-events:none;animation:pointsSpark .72s ease-out forwards}
+.points-spark{position:fixed;z-index:99994;left:50%;top:50%;width:9px;height:9px;border-radius:3px;background:#ffdc45;pointer-events:none;animation:pointsSpark .72s ease-out forwards}
 @keyframes pointsPanelIn{0%{transform:scale(.75);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
-@keyframes pointsBurst{0%{opacity:0;transform:translate(-50%,-25%) scale(.35) rotate(-8deg)}18%{opacity:1;transform:translate(-50%,-60%) scale(1.18) rotate(4deg)}45%{transform:translate(-50%,-70%) scale(1)}100%{opacity:0;transform:translate(-50%,-180%) scale(.8)}}
+@keyframes pointsBurst{0%{opacity:0;transform:translate(-50%,-50%) scale(.35) rotate(-8deg)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.18) rotate(4deg)}45%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(.82)}}
 @keyframes pointsSpark{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(var(--sx),var(--sy)) scale(.1)}}
 @media(prefers-reduced-motion:reduce){.points-pop,.points-burst,.points-spark{animation-duration:.01ms!important}}
 
