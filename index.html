@@ -61,6 +61,16 @@ body{padding:22px 20px 34px}
 .livesbar{display:flex;align-items:center;gap:8px;margin:0 0 16px;font-weight:900}
 .heart{display:inline-block;width:30px;height:30px;transition:transform .18s;image-rendering:pixelated}.heart svg{display:block;width:100%;height:100%;image-rendering:pixelated}.heart:active{transform:scale(.9)}
 .points-pop{margin:14px 0 0;padding:12px 15px;border-radius:14px;background:#fff7f7;border:1px solid #ffd4d6;font-weight:900;color:#d95d62}
+/* V5.1: animasi poin saat jawaban dikunci */
+.points-pop{animation:pointsPanelIn .28s cubic-bezier(.2,.8,.2,1) both}
+.points-burst{position:fixed;z-index:99995;left:50%;top:42%;transform:translate(-50%,-50%);pointer-events:none;text-align:center;font-weight:1000;font-size:clamp(34px,10vw,64px);line-height:1;color:#ffd83d;-webkit-text-stroke:1px #9c5b00;text-shadow:0 4px 0 #9c5b00,0 8px 18px #0005;animation:pointsBurst .95s cubic-bezier(.16,.8,.25,1) forwards}
+.points-burst small{display:block;margin-top:9px;font-size:14px;letter-spacing:2px;color:#fff;-webkit-text-stroke:0;text-shadow:0 2px 5px #000;font-weight:900}
+.points-spark{position:fixed;z-index:99994;left:50%;top:43%;width:9px;height:9px;border-radius:3px;background:#ffdc45;pointer-events:none;animation:pointsSpark .72s ease-out forwards}
+@keyframes pointsPanelIn{0%{transform:scale(.75);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
+@keyframes pointsBurst{0%{opacity:0;transform:translate(-50%,-25%) scale(.35) rotate(-8deg)}18%{opacity:1;transform:translate(-50%,-60%) scale(1.18) rotate(4deg)}45%{transform:translate(-50%,-70%) scale(1)}100%{opacity:0;transform:translate(-50%,-180%) scale(.8)}}
+@keyframes pointsSpark{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(var(--sx),var(--sy)) scale(.1)}}
+@media(prefers-reduced-motion:reduce){.points-pop,.points-burst,.points-spark{animation-duration:.01ms!important}}
+
 .retry-box{margin-top:20px;padding:18px;border-radius:18px;background:#fff7f7;border:1px solid #ffd4d6}
 
 .question{font-size:29px;line-height:1.25;margin:0 0 30px}
@@ -338,7 +348,15 @@ let randomizedOptions=[],participantLives=MAX_LIVES,answerLog=[],achievementLeve
 function show(id){["home","quiz","final"].forEach(x=>document.getElementById(x).classList.add("hidden"));document.getElementById(id).classList.remove("hidden")}
 function resetLives(){participantLives=MAX_LIVES;renderLives()}
 function renderLives(){const el=document.getElementById("livesBar");if(!el)return;const heart=(filled)=>`<span class="heart" aria-label="${filled?"Nyawa tersedia":"Nyawa habis"}"><svg viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true"><path d="M2 1h4v1h4V1h4v1h1v4h-1v2h-1v2h-2v2H9v1H7v-1H5v-2H3V8H2V6H1V2h1z" fill="${filled?"#ef3340":"#fff"}" stroke="${filled?"#292929":"#d94b55"}" stroke-width=".8"/><path d="M3 2h3v1h4V2h3v3h-1v2h-1v2H9v2H7v-1H5V8H4V6H3z" fill="${filled?"#ef3340":"#fff"}"/><path d="M3 2h3v1H4v2H3z" fill="${filled?"#ff7b83":"#fff"}"/></svg></span>`;el.innerHTML=`Nyawa ${Array.from({length:MAX_LIVES},(_,i)=>heart(i<participantLives)).join("")}`;}
-function showPoints(points){const el=document.getElementById("pointsPop");if(!el)return;el.textContent=points>0?`+${points} poin 🎉`:"0 poin • -1 ❤️";el.classList.remove("hidden");}
+function showPoints(points){
+  const el=document.getElementById("pointsPop");if(!el)return;
+  el.textContent=points>0?`+${points} poin 🎉`:"0 poin • -1 ❤️";el.classList.remove("hidden");
+  document.querySelectorAll(".points-burst,.points-spark").forEach(n=>n.remove());
+  const burst=document.createElement("div");burst.className="points-burst";burst.setAttribute("aria-live","polite");
+  burst.innerHTML=points>0?`+${points}<small>POIN DIDAPAT! ✨</small>`:`0<small>POIN • COBA LAGI 💪</small>`;
+  document.body.appendChild(burst);setTimeout(()=>burst.remove(),1050);
+  if(points>0){for(let i=0;i<12;i++){const spark=document.createElement("i");spark.className="points-spark";const angle=(Math.PI*2*i/12)+(Math.random()*.18),distance=55+Math.random()*70;spark.style.setProperty("--sx",`${Math.cos(angle)*distance}px`);spark.style.setProperty("--sy",`${Math.sin(angle)*distance}px`);spark.style.background=["#ffdc45","#7cff6b","#ff7eb6","#66d9ff"][i%4];document.body.appendChild(spark);setTimeout(()=>spark.remove(),800)}}
+}
 function hidePoints(){document.getElementById("pointsPop")?.classList.add("hidden")}
 function startFreshQuiz(){current=0;score=0;selected=null;checked=false;resultSent=false;answerLog=[];achievementLevel=0;renderAchievementHud();resetLives();quizStartedAt=Date.now();questionStartedAt=quizStartedAt;show("quiz");renderQuestion()}
 function startQuiz(){
