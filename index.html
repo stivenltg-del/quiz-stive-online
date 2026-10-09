@@ -205,6 +205,10 @@ body{background:#f8f8fa!important;color:#24252a;-webkit-font-smoothing:antialias
 :focus-visible{outline:3px solid rgba(230,70,84,.38)!important;outline-offset:3px}
 .heart svg{image-rendering:pixelated;shape-rendering:crispEdges}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+/* A quiet chessboard accent keeps the existing white/coral visual identity */
+.topbar{position:relative}.topbar:after{content:"";display:block;height:5px;width:76px;margin-top:10px;border-radius:5px;background:repeating-linear-gradient(90deg,#202124 0 10px,#fff 10px 20px);border:1px solid #eee}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 </style>
 </head>
 <body>
@@ -254,6 +258,7 @@ body{background:#f8f8fa!important;color:#24252a;-webkit-font-smoothing:antialias
       <h1>SKOR KAMU</h1>
       <div class="score" id="finalScore">0</div>
       <p id="finalText">lumayan...</p>
+      <p id="resultSaveStatus" role="status" aria-live="polite" style="font-size:13px;color:#777;overflow-wrap:anywhere"></p>
       <button class="primary" style="margin-top:12px;background:#fff;color:#202737;border:1px solid #e1e3ea;box-shadow:none" onclick="participantName='';document.getElementById('participantName').value='';show('home')">BENTAR MO BALIK</button>
       <button class="primary" onclick="participantName='';document.getElementById('participantName').value='';startQuiz()">MAIN LAGI <span class="arrow">↻</span></button>
     </section>
@@ -434,7 +439,9 @@ function finishQuiz(){
   document.getElementById("finalText").textContent=r.range?.message||"Selesai!";
   const oldImg=document.querySelector("#final .result-reaction");if(oldImg)oldImg.remove();
   if(r.range?.reactionImage){const img=document.createElement("img");img.className="result-reaction";img.src=r.range.reactionImage;img.style.cssText="display:block;width:min(100%,420px);aspect-ratio:1/1;object-fit:cover;border-radius:20px;margin:20px auto";document.getElementById("finalText").after(img)}
-  show("final");saveResult();
+  show("final");
+  const status=document.getElementById("resultSaveStatus");if(status)status.textContent="Mengirim hasil…";
+  saveResult();
 }
 function nextQuestion(){
   if(current<quiz.questions.length-1){current++;renderQuestion();return}
@@ -449,13 +456,18 @@ function skipQuestion(){
   finishQuiz();
 }
 async function saveResult(){
-  if(resultSent||!window.FIREBASE_CONFIG||window.FIREBASE_CONFIG.apiKey==="ISI_API_KEY")return;
+  const status=document.getElementById("resultSaveStatus");
+  if(resultSent){if(status)status.textContent="✅ Hasil sudah tersimpan.";return}
+  if(!window.FIREBASE_CONFIG||window.FIREBASE_CONFIG.apiKey==="ISI_API_KEY"){
+    if(status)status.textContent="⚠️ Firebase belum dikonfigurasi. Hasil ini tidak tersimpan di cloud.";return;
+  }
   try{
     if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE_CONFIG);
     const db=firebase.firestore(),maxScore=quiz.questions.reduce((sum,q)=>sum+Math.max(0,...(q.options||[]).map(o=>Number(o.points)||0)),0);
-    await db.collection("quizResults").add({name:participantName,score:Number(score)||0,maxScore,questionCount:quiz.questions.length,durationSeconds:Math.max(0,Math.round((Date.now()-quizStartedAt)/1000)),answers:answerLog,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
-    resultSent=true;
-  }catch(e){console.error("Gagal mengirim hasil:",e)}
+    const answers=answerLog.slice(0,100).map(a=>({question:String(a.question||"").slice(0,1000),selectedText:String(a.selectedText||"").slice(0,500),points:Number(a.points)||0,skipped:!!a.skipped,opinion:String(a.opinion||"").slice(0,1200),durationSeconds:Math.max(0,Math.floor(Number(a.durationSeconds)||0)),feedback:String(a.feedback||"").slice(0,1000),explanation:String(a.explanation||"").slice(0,1500)}));
+    await db.collection("quizResults").add({name:String(participantName||"Peserta").trim().slice(0,60),score:Number(score)||0,maxScore,questionCount:quiz.questions.length,durationSeconds:Math.max(0,Math.floor((Date.now()-quizStartedAt)/1000)),answers,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    resultSent=true;if(status)status.textContent="✅ Hasil berhasil dikirim.";
+  }catch(e){console.error("Gagal mengirim hasil:",e);if(status)status.textContent="❌ Hasil belum tersimpan: "+(e.message||"koneksi gagal")+". Catat skor ini dan coba lagi setelah memuat ulang."}
 }
 function escapeHTML(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
 function escapeAttr(s){return escapeHTML(s)}

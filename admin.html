@@ -73,6 +73,12 @@ th,td{padding:10px;border-bottom:1px solid #eee;text-align:left;white-space:nowr
 /* clean white premium theme + compact question accordions */
 :root{--bg:#fff;--card:#fff;--dark:#202124;--muted:#747782;--line:#e8e8ec;--accent:#e85d68}
 body{background:#fff;color:#24252a} .top{border-radius:18px;box-shadow:0 8px 28px #15151b0b} .card{border-radius:18px;box-shadow:0 8px 28px #15151b08} button{border-radius:13px;transition:transform .18s ease,box-shadow .18s ease,background .18s ease} button:hover{transform:translateY(-1px);box-shadow:0 7px 18px #11111112} .qcard{padding:0;overflow:hidden}.qhead{padding:14px 16px;margin:0;background:#fff;position:sticky;top:132px;z-index:2;border-bottom:1px solid #f0f0f3}.qhead h2{font-size:16px;margin:0;flex:1}.qhead .toggle-q{background:#f5f5f7;color:#27282e;border:1px solid #e9e9ee;padding:8px 12px}.qhead .remove-q{margin-left:auto;flex:0 0 auto;padding:5px 8px;font-size:11px;line-height:1.1;border-radius:9px;min-width:0}.qhead{gap:7px}.qhead .toggle-q{padding:7px 9px;font-size:12px}.qbody{padding:16px}.qsummary{font-size:12px;color:#81838b;margin-top:4px}.option{border-radius:15px;background:#fcfcfd}
+
+/* Chess-inspired accent: subtle squares, without overpowering the existing light theme */
+.top:before{content:"";display:block;height:5px;width:100%;margin:-12px 0 10px;border-radius:12px;background:repeating-linear-gradient(90deg,#202124 0 14px,#fff 14px 28px);opacity:.82}
+.remove-q{background:#fff!important;color:#a72f3b!important;border:1px solid #f0c9cd!important;min-width:0!important;padding:5px 8px!important;font-size:11px!important}
+.status{overflow-wrap:anywhere}.status:empty{display:none}
+@media(max-width:520px){.card{padding:13px}.qhead{top:120px;padding:10px}.brand{font-size:18px}.actions button{flex:1 1 auto}.tool{font-size:12px}}
 </style>
 </head>
 <body>
@@ -437,9 +443,12 @@ function addOptionCard(parent,o,oi){
     status.textContent="Mengunggah video... jangan tutup halaman.";
     try{
       const form=new FormData();form.append("file",f);form.append("upload_preset",cfg.uploadPreset);form.append("folder","quiz-stive/videos");
-      const response=await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cfg.cloudName)}/video/upload`,{method:"POST",body:form});
-      const result=await response.json().catch(()=>({}));
-      if(!response.ok||!result.secure_url)throw new Error(result.error?.message||"Upload video gagal. Periksa preset Cloudinary.");
+      const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),120000);
+      let response,result;
+      try{response=await fetch(`https://api.cloudinary.com/v1_1/${encodeURIComponent(cfg.cloudName)}/video/upload`,{method:"POST",body:form,signal:controller.signal});result=await response.json().catch(()=>({}));}
+      catch(err){if(err.name==="AbortError")throw new Error("Upload video melewati batas 120 detik. Coba video lebih kecil atau koneksi lebih stabil.");throw err}
+      finally{clearTimeout(timeout)}
+      if(!response.ok||!result.secure_url)throw new Error(result.error?.message||`Upload video gagal (HTTP ${response.status}). Pastikan preset Unsigned mengizinkan video/upload.`);
       op.querySelector(".o-video-url").value=result.secure_url;
       status.textContent="Video berhasil diunggah. URL tersimpan di kolom video.";
     }catch(e){status.textContent="Gagal: "+e.message;}
@@ -643,23 +652,27 @@ async function persistImageValue(value, path){
   body.append("upload_preset",cfg.uploadPreset);
   body.append("folder","quiz-stive");
   body.append("public_id",String(path||"image").replace(/[^a-zA-Z0-9_-]/g,"_")+"_"+Date.now()+"_"+Math.random().toString(36).slice(2,8));
-  const response=await fetch(endpoint,{method:"POST",body});
-  const result=await response.json().catch(()=>({}));
-  if(!response.ok||!result.secure_url) throw new Error(result.error?.message||"Upload Cloudinary gagal. Periksa unsigned upload preset.");
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),60000);
+  let response,result;
+  try{
+    response=await fetch(endpoint,{method:"POST",body,signal:controller.signal});
+    result=await response.json().catch(()=>({}));
+  }catch(err){
+    if(err.name==="AbortError")throw new Error("Upload gambar melewati batas 60 detik. Periksa koneksi dan preset Unsigned Cloudinary.");
+    throw new Error("Tidak dapat menghubungi Cloudinary: "+(err.message||"koneksi gagal"));
+  }finally{clearTimeout(timeout)}
+  if(!response.ok||!result.secure_url) throw new Error(result.error?.message||`Upload Cloudinary gagal (HTTP ${response.status}). Pastikan preset Unsigned mengizinkan image/upload.`);
   return result.secure_url;
 }
 async function persistQuizImages(data){
-  for(let qi=0;qi<(data.questions||[]).length;qi++){
-    const q=data.questions[qi];
-    for(let oi=0;oi<(q.options||[]).length;oi++){
-      const o=q.options[oi];
-      o.image=await persistImageValue(o.image,`q${qi+1}_o${oi+1}_choice.jpg`);
-      o.reactionImage=await persistImageValue(o.reactionImage,`q${qi+1}_o${oi+1}_reaction.jpg`);
-    }
-  }
-  for(let ri=0;ri<(data.resultRanges||[]).length;ri++){
-    data.resultRanges[ri].reactionImage=await persistImageValue(data.resultRanges[ri].reactionImage,`result_${ri+1}_reaction.jpg`);
-  }
+  const tasks=[];
+  (data.questions||[]).forEach((q,qi)=>(q.options||[]).forEach((o,oi)=>{
+    tasks.push(async()=>{o.image=await persistImageValue(o.image,`q${qi+1}_o${oi+1}_choice.jpg`);o.reactionImage=await persistImageValue(o.reactionImage,`q${qi+1}_o${oi+1}_reaction.jpg`)});
+  }));
+  (data.resultRanges||[]).forEach((r,ri)=>tasks.push(async()=>{r.reactionImage=await persistImageValue(r.reactionImage,`result_${ri+1}_reaction.jpg`)}));
+  // Execute at most three tasks at once to protect mobile connections.
+  for(let i=0;i<tasks.length;i+=3){await Promise.all(tasks.slice(i,i+3).map(run=>run()));msg(`Mengunggah gambar… ${Math.min(i+3,tasks.length)} dari ${tasks.length}`)}
   // Reflect Storage URLs in editor fields so subsequent saves do not upload duplicates.
   const cards=[...document.querySelectorAll(".qcard")];
   data.questions.forEach((q,qi)=>{
@@ -697,14 +710,19 @@ $("resetRanges").onclick=()=>{
 };
 
 $("saveQuiz").onclick=async()=>{
-  msg("Menyimpan quiz...");
+  const saveButton=$("saveQuiz");
+  if(saveButton.disabled)return;
+  saveButton.disabled=true;saveButton.textContent="⏳ Menyimpan…";
+  msg("Memeriksa data quiz…");
   try{
+    if(!db||!auth||!auth.currentUser||auth.currentUser.uid!==ADMIN_UID)throw new Error("Sesi admin tidak aktif. Keluar lalu login kembali.");
     let d=collectData();
     if(!d.questions.length) throw new Error("Quiz harus memiliki minimal satu soal.");
     if(d.questions.length>100) throw new Error("Maksimal 100 soal agar penyimpanan tetap aman.");
     if(d.questions.some(q=>!q.question || !Array.isArray(q.options) || q.options.length!==5)) throw new Error("Setiap soal wajib punya pertanyaan dan tepat 5 pilihan A–E.");
-    msg("Mengunggah gambar dan menyimpan quiz...");
+    msg("Mengunggah gambar ke Cloudinary. Jangan tutup halaman…");
     d=await persistQuizImages(d);
+    msg("Menyimpan pertanyaan ke Firestore…");
     const old=await db.collection("quizQuestions").get();
     if(old.size+d.questions.length+1>450) throw new Error("Jumlah operasi terlalu besar. Batasi soal agar maksimal 450 operasi penyimpanan.");
     const batch=db.batch();
@@ -712,8 +730,9 @@ $("saveQuiz").onclick=async()=>{
     d.questions.forEach((q,i)=>batch.set(db.collection("quizQuestions").doc("q"+(i+1)),q));
     batch.set(db.collection("quizSettings").doc("main"),{eyebrow:d.eyebrow,title:d.title,subtitle:d.subtitle,display:d.display,resultRanges:d.resultRanges,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
     await batch.commit();
-    currentData=d;msg("✅ Quiz tersimpan. Gambar sudah dipindahkan ke Firebase Storage dan publik akan memuat versi terbaru.");
-  }catch(e){msg("❌ Gagal menyimpan quiz: "+e.message)}
+    currentData=d;msg("✅ Quiz berhasil disimpan ke Firestore. Gambar dimuat dari Cloudinary; halaman publik akan membaca versi terbaru saat dimuat ulang.");
+  }catch(e){console.error("Gagal menyimpan Quiz Stive",e);msg("❌ Gagal menyimpan quiz: "+(e.message||String(e))+". Data lama di Firestore tidak dihapus jika batch gagal.")}
+  finally{saveButton.disabled=false;saveButton.textContent="💾 Simpan Quiz"}
 };
 $("saveAppearance").onclick=async()=>{msg("Menyimpan tampilan...");try{const d=readDisplayControls();await db.collection("quizSettings").doc("main").set({display:d,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});currentData.display=d;msg("✅ Tampilan teks tersimpan.");}catch(e){msg("❌ Gagal menyimpan tampilan: "+e.message)}};
 $("resetAppearance").onclick=()=>{renderAppearanceControls(DEFAULT_DISPLAY);msg("Tampilan dikembalikan ke default. Tekan Simpan Tampilan jika ingin menyimpannya.")};
@@ -750,14 +769,14 @@ async function loadResults(){
     resultsCache=s.docs.map(d=>({id:d.id,...d.data()}));
     $("resultRows").innerHTML=resultsCache.map(x=>{
       const sec=Math.max(0,Number(x.durationSeconds)||0);
-      return `<tr><td>${esc(x.name)}</td><td>${Number(x.score)||0}</td><td>${Number(x.maxScore)||0}</td><td>${Number(x.questionCount)||0}</td><td>${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")}</td><td>${x.createdAt?.toDate?x.createdAt.toDate().toLocaleString("id-ID"):"-"}</td><td><button class="secondary answer-detail-btn" data-result="${esc(x.id)}">Lihat</button></td></tr><tr class="answer-detail-row hidden" id="detail-${esc(x.id)}"><td colspan="7">${Array.isArray(x.answers)&&x.answers.length?x.answers.map((a,i)=>`<div style="white-space:normal;min-width:260px;padding:8px 0"><b>Soal ${i+1}:</b> ${esc(a.question)}<br><b>Dipilih:</b> ${esc(a.selectedText||"-")} · ${Number(a.points)||0} poin<br><small>Waktu: ${Math.max(0,Number(a.durationSeconds)||0)} detik</small></div>`).join(""):'<span>Detail jawaban belum tersedia untuk percobaan lama.</span>'}</td></tr>`;
+      return `<tr><td>${esc(x.name)}</td><td>${Number(x.score)||0}</td><td>${Number(x.maxScore)||0}</td><td>${Number(x.questionCount)||0}</td><td>${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")}</td><td>${x.createdAt?.toDate?x.createdAt.toDate().toLocaleString("id-ID"):"-"}</td><td><button class="secondary answer-detail-btn" data-result="${esc(x.id)}">Lihat</button></td></tr><tr class="answer-detail-row hidden" id="detail-${esc(x.id)}"><td colspan="7">${Array.isArray(x.answers)&&x.answers.length?x.answers.map((a,i)=>`<div style="white-space:normal;min-width:260px;padding:10px 0;border-bottom:1px solid #eee"><b>Soal ${i+1}:</b> ${esc(a.question||"(soal tidak tercatat)")}<br><b>Status:</b> ${a.skipped?"Dilewati":"Dijawab"}<br><b>Dipilih:</b> ${esc(a.selectedText||"-")} · ${Number(a.points)||0} poin<br><b>Pendapat:</b> ${esc(a.opinion||"(tidak ada pendapat)")}<br><small>Waktu: ${Math.max(0,Number(a.durationSeconds)||0)} detik</small></div>`).join(""):'<span>Detail jawaban belum tersedia untuk percobaan lama.</span>'}</td></tr>`;
     }).join("")||'<tr><td colspan="7">Belum ada hasil.</td></tr>';
     document.querySelectorAll(".answer-detail-btn").forEach(b=>b.onclick=()=>{const row=document.getElementById("detail-"+b.dataset.result);if(row)row.classList.toggle("hidden")});
   }catch(e){$("resultRows").innerHTML='<tr><td colspan="7">❌ Gagal memuat hasil: '+esc(e.message)+'</td></tr>'}
 }
 $("refreshResults").onclick=loadResults;
 $("exportResults").onclick=()=>{
-  const rows=[["Nama","Skor","Maksimal","Jumlah soal","Durasi detik","Waktu kirim"],...resultsCache.map(x=>[x.name,x.score,x.maxScore,x.questionCount,x.durationSeconds,x.createdAt?.toDate?x.createdAt.toDate().toISOString():""])];
+  const rows=[["Nama","Skor","Maksimal","Jumlah soal","Durasi detik","Waktu kirim","Detail jawaban"] ,...resultsCache.map(x=>[x.name,x.score,x.maxScore,x.questionCount,x.durationSeconds,x.createdAt?.toDate?x.createdAt.toDate().toISOString():"",(x.answers||[]).map((a,i)=>`Soal ${i+1}: ${a.question||""}; status=${a.skipped?"dilewati":"dijawab"}; pilihan=${a.selectedText||"-"}; poin=${Number(a.points)||0}; pendapat=${a.opinion||""}`).join(" | ")])];
   const csv=rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\n");
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="hasil-quiz-stive.csv";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500);
 };
