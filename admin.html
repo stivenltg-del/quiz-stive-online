@@ -172,6 +172,21 @@ input,textarea,select{background:#25262b;color:#f4f4f5;border-color:#45464d}
     <section id="view-appearance" class="hidden">
       <button class="secondary back" data-view="editor">← Kembali ke Edit Quiz</button>
       <div class="card">
+        <h2>🎨 Atur Seluruh Tampilan Quiz</h2>
+        <p class="small">Warna dan font berlaku untuk seluruh halaman peserta, termasuk kartu, tombol, kolom, hasil, dan popup.</p>
+        <h3>Warna global & font</h3>
+        <div class="style-row">
+          <div><label>Latar utama (default hitam)</label><input type="color" id="themeBg" value="#080808"></div>
+          <div><label>Kartu / panel (default lebih hitam)</label><input type="color" id="themeCard" value="#030303"></div>
+          <div><label>Teks utama</label><input type="color" id="themeText" value="#f4f4f5"></div>
+          <div><label>Teks sekunder</label><input type="color" id="themeMuted" value="#b7b8bf"></div>
+          <div><label>Warna aksen</label><input type="color" id="themeAccent" value="#e85d68"></div>
+          <div><label>Warna border</label><input type="color" id="themeLine" value="#343434"></div>
+          <div><label>Font seluruh situs</label><select id="themeFont"><option value="Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif">Inter / System</option><option value="Arial,Helvetica,sans-serif">Arial</option><option value="Verdana,Geneva,sans-serif">Verdana</option><option value="Tahoma,Geneva,sans-serif">Tahoma</option><option value="Georgia,serif">Georgia</option><option value="Trebuchet MS,Arial,sans-serif">Trebuchet MS</option></select></div>
+          <div><label>Ukuran dasar font (px)</label><input type="number" id="themeFontSize" min="12" max="24" value="16"></div>
+        </div>
+        <div class="actions"><button type="button" id="saveGlobalTheme" class="primary">💾 Simpan Warna & Font Global</button><button type="button" id="resetGlobalTheme" class="secondary">Kembalikan Default Gelap</button></div>
+        <hr style="border:0;border-top:1px solid var(--line);margin:22px 0">
         <h2>🎨 Atur Bentuk & Posisi Teks</h2>
         <p class="small">Pengaturan ini ikut tersimpan dan dipakai di halaman peserta. Di bawahnya ada preview supaya kamu bisa lihat kira-kira hasil akhirnya.</p>
 
@@ -426,6 +441,7 @@ function switchView(view){
 document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>switchView(b.dataset.view)));
 
 function renderEditor(data){
+  renderGlobalTheme(data.theme||defaultGlobalTheme());
   currentData=data;
   $("eyebrow").value=data.eyebrow||"";
   $("title").value=data.title||"";
@@ -616,7 +632,7 @@ function collectData(){
       videoStoragePath:op.dataset.videoStoragePath||""
     }))
   }));
-  return {eyebrow:$("eyebrow").value.trim(),title:$("title").value.trim(),subtitle:$("subtitle").value.trim(),display:readDisplayControls(),resultRanges:(currentData&&currentData.resultRanges)||defaultResultRanges(),questions};
+  return {eyebrow:$("eyebrow").value.trim(),title:$("title").value.trim(),subtitle:$("subtitle").value.trim(),display:readDisplayControls(),theme:readGlobalTheme(),resultRanges:(currentData&&currentData.resultRanges)||defaultResultRanges(),questions};
 }
 function readDisplayControls(){
   const d=mergeDisplay({});
@@ -658,7 +674,7 @@ async function loadQuiz(){
     const snap=await db.collection("quizQuestions").orderBy("order").get();
     if(!meta.exists||snap.empty){renderEditor(defaultData());msg("Belum ada data quiz. Template awal sudah dibuat di editor.");return}
     const m=meta.data();
-    renderEditor({eyebrow:m.eyebrow||"",title:m.title||"",subtitle:m.subtitle||"",display:mergeDisplay(m.display||{}),resultRanges:(m.resultRanges&&m.resultRanges.length===5)?m.resultRanges:defaultResultRanges(),questions:snap.docs.map(d=>d.data()).sort((a,b)=>(a.order||0)-(b.order||0))});
+    renderEditor({eyebrow:m.eyebrow||"",title:m.title||"",subtitle:m.subtitle||"",display:mergeDisplay(m.display||{}),theme:m.theme||defaultGlobalTheme(),resultRanges:(m.resultRanges&&m.resultRanges.length===5)?m.resultRanges:defaultResultRanges(),questions:snap.docs.map(d=>d.data()).sort((a,b)=>(a.order||0)-(b.order||0))});
     msg("✅ Quiz berhasil dimuat.");
   }catch(e){msg("❌ Gagal memuat quiz: "+e.message)}
 }
@@ -776,12 +792,18 @@ $("saveQuiz").onclick=async()=>{
     const batch=db.batch();
     old.docs.forEach(x=>batch.delete(x.ref));
     d.questions.forEach((q,i)=>batch.set(db.collection("quizQuestions").doc("q"+(i+1)),q));
-    batch.set(db.collection("quizSettings").doc("main"),{eyebrow:d.eyebrow,title:d.title,subtitle:d.subtitle,display:d.display,resultRanges:d.resultRanges,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+    batch.set(db.collection("quizSettings").doc("main"),{eyebrow:d.eyebrow,title:d.title,subtitle:d.subtitle,display:d.display,theme:d.theme||readGlobalTheme(),resultRanges:d.resultRanges,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
     await batch.commit();
     currentData=d;msg("✅ Quiz berhasil disimpan ke Firestore. Gambar dimuat dari Cloudinary; halaman publik akan membaca versi terbaru saat dimuat ulang.");
   }catch(e){console.error("Gagal menyimpan Quiz Stive",e);msg("❌ Gagal menyimpan quiz: "+(e.message||String(e))+". Data lama di Firestore tidak dihapus jika batch gagal.")}
   finally{saveButton.disabled=false;saveButton.textContent="💾 Simpan Quiz"}
 };
+const GLOBAL_THEME_DEFAULT={bg:"#080808",card:"#030303",text:"#f4f4f5",muted:"#b7b8bf",accent:"#e85d68",line:"#343434",font:"Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif",fontSize:16};
+function defaultGlobalTheme(){return {...GLOBAL_THEME_DEFAULT}}
+function readGlobalTheme(){return {bg:$("themeBg")?.value||GLOBAL_THEME_DEFAULT.bg,card:$("themeCard")?.value||GLOBAL_THEME_DEFAULT.card,text:$("themeText")?.value||GLOBAL_THEME_DEFAULT.text,muted:$("themeMuted")?.value||GLOBAL_THEME_DEFAULT.muted,accent:$("themeAccent")?.value||GLOBAL_THEME_DEFAULT.accent,line:$("themeLine")?.value||GLOBAL_THEME_DEFAULT.line,font:$("themeFont")?.value||GLOBAL_THEME_DEFAULT.font,fontSize:Math.min(24,Math.max(12,Number($("themeFontSize")?.value)||16))}}
+function renderGlobalTheme(t){t={...GLOBAL_THEME_DEFAULT,...(t||{})};const map={themeBg:"bg",themeCard:"card",themeText:"text",themeMuted:"muted",themeAccent:"accent",themeLine:"line",themeFont:"font",themeFontSize:"fontSize"};Object.entries(map).forEach(([id,k])=>{if($(id))$(id).value=t[k]});}
+$("saveGlobalTheme")?.addEventListener("click",async()=>{msg("Menyimpan warna dan font global...");try{const theme=readGlobalTheme();await db.collection("quizSettings").doc("main").set({theme,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});if(currentData)currentData.theme=theme;msg("✅ Warna dan font global tersimpan. Muat ulang halaman peserta untuk melihat hasilnya.")}catch(e){msg("❌ Gagal menyimpan warna/font: "+e.message)}});
+$("resetGlobalTheme")?.addEventListener("click",()=>{renderGlobalTheme(defaultGlobalTheme());msg("Default gelap dipilih. Tekan Simpan Warna & Font Global untuk menerapkan.")});
 $("saveAppearance").onclick=async()=>{msg("Menyimpan tampilan...");try{const d=readDisplayControls();await db.collection("quizSettings").doc("main").set({display:d,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});currentData.display=d;msg("✅ Tampilan teks tersimpan.");}catch(e){msg("❌ Gagal menyimpan tampilan: "+e.message)}};
 $("resetAppearance").onclick=()=>{renderAppearanceControls(DEFAULT_DISPLAY);msg("Tampilan dikembalikan ke default. Tekan Simpan Tampilan jika ingin menyimpannya.")};
 
